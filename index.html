@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>电子拼豆 - Bead Art Studio</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f0ebe3;
+  --panel-bg: #ffffff;
+  --board-bg: #e8e4da;
+  --board-dot: #d4cfc4;
+  --text: #2c2c2c;
+  --text-secondary: #888;
+  --border: #ddd;
+  --shadow: rgba(0,0,0,0.08);
+  --toolbar-bg: #f8f6f2;
+  --btn-hover: #e8e4da;
+  --btn-active: #d4cfc4;
+  --accent: #4a90d9;
+  --accent-hover: #357abd;
+  --grid-line: transparent;
+  --status-bg: #f8f6f2;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a2e;
+  --panel-bg: #16213e;
+  --board-bg: #1a1a2e;
+  --board-dot: #2a2a4a;
+  --text: #e8e8e8;
+  --text-secondary: #999;
+  --border: #333;
+  --shadow: rgba(0,0,0,0.3);
+  --toolbar-bg: #0f3460;
+  --btn-hover: #1a1a4e;
+  --btn-active: #2a2a5e;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --grid-line: #2a2a4a;
+  --status-bg: #0f3460;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.app-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--panel-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
+  margin-bottom: 8px;
+  transition: background 0.3s;
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.header h1 span { color: var(--accent); }
+
+.theme-toggle {
+  background: none;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--text);
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  transform: scale(1.1);
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--panel-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  transition: background 0.3s;
+}
+
+.tool-group {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.tool-group + .tool-group::before {
+  content: '';
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 6px;
+}
+
+.tool-btn {
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tool-btn:hover { background: var(--btn-hover); }
+.tool-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.tool-btn .icon { font-size: 16px; margin-right: 3px; }
+
+/* Color Palette */
+.palette-container {
+  padding: 8px 12px;
+  background: var(--panel-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
+  margin-bottom: 8px;
+  transition: background 0.3s;
+}
+
+.palette-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.palette-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.palette-scroll::-webkit-scrollbar { height: 4px; }
+.palette-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.palette {
+  display: flex;
+  gap: 3px;
+  min-width: max-content;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.color-swatch:hover { transform: scale(1.15); z-index: 2; }
+.color-swatch.active { border-color: var(--accent); transform: scale(1.15); z-index: 1; box-shadow: 0 0 0 2px var(--panel-bg), 0 0 0 4px var(--accent); }
+.color-swatch .color-label {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  background: var(--panel-bg);
+  padding: 1px 4px;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--text);
+  z-index: 10;
+}
+.color-swatch:hover .color-label { opacity: 1; }
+
+/* Board */
+.board-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--panel-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow);
+  margin-bottom: 8px;
+  transition: background 0.3s;
+  overflow: auto;
+}
+
+#board {
+  display: grid;
+  gap: 1px;
+  touch-action: manipulation;
+  position: relative;
+}
+
+.cell {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.cell.empty {
+  background: var(--board-bg);
+}
+
+.cell.empty::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: var(--board-dot);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cell.has-bead {
+  border-radius: 50%;
+  box-shadow: inset 0 -2px 3px rgba(0,0,0,0.2), inset 0 2px 3px rgba(255,255,255,0.3);
+  transform: scale(0.92);
+}
+
+.cell.has-bead:hover {
+  transform: scale(1.0);
+  z-index: 2;
+}
+
+.cell.has-bead::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  width: 6px;
+  height: 4px;
+  background: rgba(255,255,255,0.35);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+
+/* Status bar */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  background: var(--status-bg);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: background 0.3s;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.15);
+  display: inline-block;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--panel-bg);
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 90vw;
+  max-height: 80vh;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  transition: background 0.3s;
+}
+
+.modal h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.modal p { margin-bottom: 16px; color: var(--text-secondary); }
+
+.modal-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--btn-hover); color: var(--text); }
+.btn-secondary:hover { background: var(--btn-active); }
+.btn-danger { background: #e74c3c; color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+
+/* Saved designs list */
+.saved-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.saved-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  background: var(--toolbar-bg);
+  transition: background 0.15s;
+}
+
+.saved-item:hover { background: var(--btn-hover); }
+
+.saved-item .name { font-weight: 500; font-size: 14px; }
+.saved-item .info { font-size: 11px; color: var(--text-secondary); }
+
+.saved-item .actions { display: flex; gap: 4px; }
+
+.saved-item .actions button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.save-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.save-input input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--toolbar-bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.save-input input:focus { border-color: var(--accent); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--panel-bg);
+  color: var(--text);
+  padding: 10px 24px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px var(--shadow);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 2000;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .app-container { padding: 8px; }
+  .header h1 { font-size: 16px; }
+  .tool-btn { padding: 5px 7px; font-size: 12px; }
+  .tool-btn .icon { font-size: 14px; }
+  .color-swatch { width: 24px; height: 24px; }
+  .cell { width: 18px; height: 18px; }
+  #board { gap: 1px; }
+  .status-bar { font-size: 11px; }
+}
+
+/* Mobile touch adjustments */
+@media (pointer: coarse) {
+  .cell { min-width: 24px; min-height: 24px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <div class="header">
+    <h1>🧩 电子<span>拼豆</span></h1>
+    <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar">
+    <div class="tool-group">
+      <button class="tool-btn active" data-tool="pen">✏️ 画笔</button>
+      <button class="tool-btn" data-tool="eraser">🧹 橡皮</button>
+      <button class="tool-btn" data-tool="fill">🪣 填充</button>
+      <button class="tool-btn" data-tool="picker">💉 取色</button>
+    </div>
+    <div class="tool-group">
+      <button class="tool-btn" id="undoBtn">↩️ 撤销</button>
+      <button class="tool-btn" id="redoBtn">↪️ 重做</button>
+    </div>
+    <div class="tool-group">
+      <button class="tool-btn" id="clearBtn">🗑️ 清空</button>
+      <button class="tool-btn" id="saveBtn">💾 保存</button>
+      <button class="tool-btn" id="loadBtn">📂 加载</button>
+      <button class="tool-btn" id="exportBtn">📥 导出PNG</button>
+    </div>
+  </div>
+
+  <!-- Color Palette -->
+  <div class="palette-container">
+    <div class="palette-header">
+      <span>色板 <span id="colorName">—</span></span>
+      <span id="beadCount">总珠子: 0</span>
+    </div>
+    <div class="palette-scroll">
+      <div class="palette" id="palette"></div>
+    </div>
+  </div>
+
+  <!-- Board -->
+  <div class="board-wrapper">
+    <div id="board"></div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="status-item">
+      工具: <strong id="statusTool">画笔</strong>
+    </span>
+    <span class="status-item">
+      颜色: <span class="status-dot" id="statusDot"></span>
+      <span id="statusColor">—</span>
+    </span>
+    <span class="status-item">
+      珠子: <strong id="statusCount">0</strong>
+    </span>
+    <span class="status-item">
+      尺寸: <span id="statusSize">30×24</span>
+    </span>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Save Modal -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <h2>💾 保存设计</h2>
+    <div class="save-input">
+      <input type="text" id="saveName" placeholder="输入设计名称..." maxlength="30">
+      <button class="btn btn-primary" id="saveConfirm">保存</button>
+    </div>
+    <h2 style="font-size:14px;margin-bottom:8px">已保存的设计</h2>
+    <div class="saved-list" id="savedList"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="saveCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Load Modal -->
+<div class="modal-overlay" id="loadModal">
+  <div class="modal">
+    <h2>📂 加载设计</h2>
+    <div class="saved-list" id="loadList"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="loadCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clear Confirm Modal -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <h2>🗑️ 清空画板</h2>
+    <p>确定要清除所有珠子吗？此操作可以撤销。</p>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="clearCancel">取消</button>
+      <button class="btn btn-danger" id="clearConfirm">清空</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const COLS = 30;
+const ROWS = 24;
+
+const COLORS = [
+  { name: '黑色', hex: '#1a1a1a' },
+  { name: '深灰', hex: '#555555' },
+  { name: '灰色', hex: '#999999' },
+  { name: '浅灰', hex: '#cccccc' },
+  { name: '白色', hex: '#f5f5f5' },
+  { name: '米色', hex: '#f5e6d3' },
+  { name: '奶油', hex: '#fffdd0' },
+  { name: '棕色', hex: '#8b5e3c' },
+  { name: '深棕', hex: '#5d3a1a' },
+  { name: '棕褐', hex: '#d2b48c' },
+  { name: '金色', hex: '#daa520' },
+  { name: '黄色', hex: '#ffd700' },
+  { name: '浅绿', hex: '#b5e7a0' },
+  { name: '绿色', hex: '#4caf50' },
+  { name: '深绿', hex: '#2e7d32' },
+  { name: '墨绿', hex: '#1b5e20' },
+  { name: '青色', hex: '#00bcd4' },
+  { name: '湖蓝', hex: '#4dd0e1' },
+  { name: '浅蓝', hex: '#90caf9' },
+  { name: '蓝色', hex: '#2196f3' },
+  { name: '深蓝', hex: '#1565c0' },
+  { name: '藏青', hex: '#0d47a1' },
+  { name: '紫色', hex: '#9c27b0' },
+  { name: '紫罗兰', hex: '#7b1fa2' },
+  { name: '品红', hex: '#e91e63' },
+  { name: '粉色', hex: '#f48fb1' },
+  { name: '玫红', hex: '#e84393' },
+  { name: '红色', hex: '#e53935' },
+  { name: '深红', hex: '#b71c1c' },
+  { name: '橙色', hex: '#ff9800' },
+  { name: '珊瑚', hex: '#ff7043' },
+  { name: '浅橙', hex: '#ffcc80' },
+  { name: '霓虹绿', hex: '#39ff14' },
+  { name: '霓虹粉', hex: '#ff1493' },
+  { name: '银色', hex: '#c0c0c0' },
+];
+
+// ===== STATE =====
+let grid = [];
+let selectedColor = COLORS[0].hex;
+let currentTool = 'pen';
+let isMouseDown = false;
+let isTouchDown = false;
+
+// Undo/Redo
+const MAX_HISTORY = 50;
+let historyStack = [];
+let historyIndex = -1;
+
+// Theme
+let isDark = localStorage.getItem('bead-theme') === 'dark';
+
+// Toast timeout
+let toastTimeout = null;
+
+// ===== INIT =====
+function initGrid() {
+  grid = [];
+  for (let r = 0; r < ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      grid[r][c] = null;
+    }
+  }
+}
+
+function cloneGrid(g) {
+  return g.map(row => [...row]);
+}
+
+function saveState() {
+  // Remove any states after current index
+  historyStack = historyStack.slice(0, historyIndex + 1);
+  historyStack.push(cloneGrid(grid));
+  if (historyStack.length > MAX_HISTORY) {
+    historyStack.shift();
+  }
+  historyIndex = historyStack.length - 1;
+}
+
+function undo() {
+  if (historyIndex > 0) {
+    historyIndex--;
+    grid = cloneGrid(historyStack[historyIndex]);
+    renderBoard();
+    updateStats();
+    showToast('↩️ 撤销');
+  } else {
+    showToast('没有可撤销的操作');
+  }
+}
+
+function redo() {
+  if (historyIndex < historyStack.length - 1) {
+    historyIndex++;
+    grid = cloneGrid(historyStack[historyIndex]);
+    renderBoard();
+    updateStats();
+    showToast('↪️ 重做');
+  } else {
+    showToast('没有可重做的操作');
+  }
+}
+
+// ===== PALETTE =====
+function buildPalette() {
+  const palette = document.getElementById('palette');
+  palette.innerHTML = '';
+  COLORS.forEach((c, i) => {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch' + (c.hex === selectedColor ? ' active' : '');
+    swatch.style.background = c.hex;
+    swatch.dataset.color = c.hex;
+    swatch.dataset.index = i;
+    swatch.title = c.name;
+
+    const label = document.createElement('span');
+    label.className = 'color-label';
+    label.textContent = c.name;
+    swatch.appendChild(label);
+
+    swatch.addEventListener('click', () => {
+      selectSwatch(i);
+    });
+
+    palette.appendChild(swatch);
+  });
+
+  updateSwatchBeadCounts();
+}
+
+let colorCounts = {};
+
+function updateSwatchBeadCounts() {
+  colorCounts = {};
+  COLORS.forEach(c => colorCounts[c.hex] = 0);
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c]) colorCounts[grid[r][c]]++;
+    }
+  }
+}
+
+function selectSwatch(index) {
+  const c = COLORS[index];
+  selectedColor = c.hex;
+  document.querySelectorAll('.color-swatch').forEach((s, i) => {
+    s.classList.toggle('active', i === index);
+  });
+  document.getElementById('colorName').textContent = c.name;
+  document.getElementById('statusDot').style.background = c.hex;
+  document.getElementById('statusColor').textContent = c.name;
+}
+
+// ===== BOARD =====
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+  board.innerHTML = '';
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+
+      if (grid[r][c]) {
+        cell.classList.add('has-bead');
+        cell.style.background = grid[r][c];
+      } else {
+        cell.classList.add('empty');
+      }
+
+      // Mouse events
+      cell.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (e.button === 2) { // right click = erase
+          handleCellAction(r, c, 'eraser');
+          return;
+        }
+        if (e.shiftKey) { // shift + click = erase
+          handleCellAction(r, c, 'eraser');
+          return;
+        }
+        isMouseDown = true;
+        handleCellAction(r, c);
+      });
+
+      cell.addEventListener('mouseenter', () => {
+        if (isMouseDown && currentTool !== 'picker') {
+          handleCellAction(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
+        }
+      });
+
+      cell.addEventListener('mouseup', () => {
+        isMouseDown = false;
+      });
+
+      // Right click handler
+      cell.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        handleCellAction(r, c, 'eraser');
+      });
+
+      // Touch events
+      let longPressTimer = null;
+      cell.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        isTouchDown = true;
+        const touch = e.changedTouches[0];
+        longPressTimer = setTimeout(() => {
+          // Long press = erase
+          handleCellAction(r, c, 'eraser');
+          isTouchDown = false;
+          longPressTimer = null;
+        }, 400);
+      }, { passive: false });
+
+      cell.addEventListener('touchmove', (e) => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+        // Track which cell we're over
+        const touch = e.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (target && target.classList.contains('cell')) {
+          const tr = parseInt(target.dataset.row);
+          const tc = parseInt(target.dataset.col);
+          if (!isNaN(tr) && !isNaN(tc) && isTouchDown) {
+            handleCellAction(tr, tc);
+          }
+        }
+      }, { passive: false });
+
+      cell.addEventListener('touchend', (e) => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+        isTouchDown = false;
+      }, { passive: false });
+
+      board.appendChild(cell);
+    }
+  }
+}
+
+function handleCellAction(row, col, forceTool) {
+  const tool = forceTool || currentTool;
+
+  switch (tool) {
+    case 'pen':
+      if (grid[row][col] !== selectedColor) {
+        if (!grid[row][col]) {
+          const oldGrid = cloneGrid(grid);
+          grid[row][col] = selectedColor;
+          saveState();
+          renderBoard();
+          updateStats();
+        }
+      }
+      break;
+
+    case 'eraser':
+      if (grid[row][col] !== null) {
+        const oldGrid = cloneGrid(grid);
+        grid[row][col] = null;
+        saveState();
+        renderBoard();
+        updateStats();
+      }
+      break;
+
+    case 'fill':
+      floodFill(row, col, selectedColor);
+      break;
+
+    case 'picker':
+      if (grid[row][col]) {
+        const color = grid[row][col];
+        const idx = COLORS.findIndex(c => c.hex === color);
+        if (idx !== -1) {
+          selectSwatch(idx);
+          currentTool = 'pen';
+          updateToolUI();
+          showToast(`取色: ${COLORS[idx].name}`);
+        }
+      }
+      // Auto-switch to pen after picking
+      if (!forceTool) {
+        currentTool = 'pen';
+        updateToolUI();
+      }
+      break;
+  }
+}
+
+// ===== FLOOD FILL =====
+function floodFill(row, col, newColor) {
+  const targetColor = grid[row][col];
+  if (targetColor === newColor) return;
+
+  if (targetColor === null) {
+    // Fill empty region
+    let changed = false;
+    const visited = new Set();
+    const queue = [[row, col]];
+    visited.add(`${row},${col}`);
+
+    while (queue.length > 0) {
+      const [r, c] = queue.shift();
+      if (grid[r][c] === null) {
+        grid[r][c] = newColor;
+        changed = true;
+      }
+      for (const [nr, nc] of getNeighbors(r, c)) {
+        const key = `${nr},${nc}`;
+        if (!visited.has(key) && grid[nr][nc] === null) {
+          visited.add(key);
+          queue.push([nr, nc]);
+        }
+      }
+    }
+
+    if (changed) {
+      saveState();
+      renderBoard();
+      updateStats();
+      showToast('✅ 填充完成');
+    }
+  } else {
+    // Fill same-color region
+    let changed = false;
+    const visited = new Set();
+    const queue = [[row, col]];
+    visited.add(`${row},${col}`);
+
+    while (queue.length > 0) {
+      const [r, c] = queue.shift();
+      if (grid[r][c] === targetColor) {
+        grid[r][c] = newColor;
+        changed = true;
+      }
+      for (const [nr, nc] of getNeighbors(r, c)) {
+        const key = `${nr},${nc}`;
+        if (!visited.has(key) && grid[nr][nc] === targetColor) {
+          visited.add(key);
+          queue.push([nr, nc]);
+        }
+      }
+    }
+
+    if (changed) {
+      saveState();
+      renderBoard();
+      updateStats();
+      showToast('✅ 填充完成');
+    }
+  }
+}
+
+function getNeighbors(r, c) {
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  const result = [];
+  for (const [dr, dc] of dirs) {
+    const nr = r + dr, nc = c + dc;
+    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+      result.push([nr, nc]);
+    }
+  }
+  return result;
+}
+
+// ===== STATS =====
+function updateStats() {
+  let total = 0;
+  updateSwatchBeadCounts();
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c]) total++;
+    }
+  }
+  document.getElementById('beadCount').textContent = `总珠子: ${total}`;
+  document.getElementById('statusCount').textContent = total;
+}
+
+// ===== TOOL UI =====
+function updateToolUI() {
+  document.querySelectorAll('[data-tool]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tool === currentTool);
+  });
+  const toolNames = { pen: '画笔', eraser: '橡皮', fill: '填充', picker: '取色' };
+  document.getElementById('statusTool').textContent = toolNames[currentTool] || '画笔';
+}
+
+// ===== THEME =====
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('bead-theme', isDark ? 'dark' : 'light');
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ===== EXPORT PNG =====
+function exportPNG() {
+  const beadSize = 22;
+  const padding = 8;
+  const w = COLS * beadSize + padding * 2;
+  const h = ROWS * beadSize + padding * 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = isDark ? '#1a1a2e' : '#f0ebe3';
+  ctx.fillRect(0, 0, w, h);
+
+  // Board background
+  ctx.fillStyle = isDark ? '#1a1a2e' : '#e8e4da';
+  ctx.fillRect(padding, padding, COLS * beadSize, ROWS * beadSize);
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = padding + c * beadSize;
+      const y = padding + r * beadSize;
+      const color = grid[r][c];
+
+      if (color) {
+        // Bead (circle with 3D effect)
+        const cx = x + beadSize / 2;
+        const cy = y + beadSize / 2;
+        const radius = beadSize * 0.42;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Highlight
+        ctx.beginPath();
+        ctx.arc(cx - radius * 0.2, cy - radius * 0.2, radius * 0.35, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fill();
+      } else {
+        // Peg dot
+        const dx = x + beadSize / 2;
+        const dy = y + beadSize / 2;
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+        ctx.fillStyle = isDark ? '#2a2a4a' : '#d4cfc4';
+        ctx.fill();
+      }
+    }
+  }
+
+  const link = document.createElement('a');
+  link.download = `拼豆_${Date.now()}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('📥 PNG 已导出');
+}
+
+// ===== SAVE / LOAD =====
+function getSavedDesigns() {
+  try {
+    return JSON.parse(localStorage.getItem('bead-designs') || '[]');
+  } catch { return []; }
+}
+
+function saveDesigns(list) {
+  localStorage.setItem('bead-designs', JSON.stringify(list));
+}
+
+function renderSavedList(container, list, isLoad) {
+  container.innerHTML = '';
+  if (list.length === 0) {
+    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary)">暂无保存的设计</div>';
+    return;
+  }
+  list.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'saved-item';
+
+    const info = document.createElement('div');
+    const nameSpan = document.createElement('div');
+    nameSpan.className = 'name';
+    nameSpan.textContent = item.name;
+    const dateSpan = document.createElement('div');
+    dateSpan.className = 'info';
+    const d = new Date(item.savedAt);
+    dateSpan.textContent = `珠子: ${item.beadCount || '?'} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+    info.appendChild(nameSpan);
+    info.appendChild(dateSpan);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    if (isLoad) {
+      const loadBtn = document.createElement('button');
+      loadBtn.className = 'btn btn-primary';
+      loadBtn.textContent = '加载';
+      loadBtn.style.padding = '4px 12px';
+      loadBtn.addEventListener('click', () => {
+        loadDesign(item);
+      });
+      actions.appendChild(loadBtn);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-secondary';
+    delBtn.textContent = '✕';
+    delBtn.style.padding = '4px 8px';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      list.splice(idx, 1);
+      saveDesigns(list);
+      renderSavedList(container, list, isLoad);
+      showToast('已删除');
+    });
+    actions.appendChild(delBtn);
+
+    div.appendChild(info);
+    div.appendChild(actions);
+    container.appendChild(div);
+  });
+}
+
+function saveCurrentDesign(name) {
+  const list = getSavedDesigns();
+  const data = {
+    name: name.trim(),
+    grid: cloneGrid(grid),
+    savedAt: Date.now(),
+    beadCount: document.getElementById('statusCount').textContent
+  };
+
+  // Replace if same name exists
+  const existing = list.findIndex(d => d.name === data.name);
+  if (existing !== -1) {
+    list[existing] = data;
+  } else {
+    // Limit to 20 designs
+    if (list.length >= 20) list.shift();
+    list.push(data);
+  }
+
+  saveDesigns(list);
+  showToast(`✅ 「${data.name}」已保存`);
+  return true;
+}
+
+function loadDesign(item) {
+  grid = cloneGrid(item.grid);
+  historyStack = [cloneGrid(grid)];
+  historyIndex = 0;
+  renderBoard();
+  updateStats();
+  closeModals();
+  showToast(`📂 已加载「${item.name}」`);
+}
+
+// ===== MODALS =====
+function closeModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+  document.getElementById('saveName').value = '';
+}
+
+function openSaveModal() {
+  document.getElementById('saveModal').classList.add('show');
+  const list = getSavedDesigns();
+  renderSavedList(document.getElementById('savedList'), list, false);
+  document.getElementById('saveName').focus();
+}
+
+function openLoadModal() {
+  document.getElementById('loadModal').classList.add('show');
+  const list = getSavedDesigns();
+  renderSavedList(document.getElementById('loadList'), list, true);
+}
+
+// ===== EVENT LISTENERS =====
+document.addEventListener('DOMContentLoaded', () => {
+  // Theme
+  applyTheme();
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    isDark = !isDark;
+    applyTheme();
+  });
+
+  // Global mouse up
+  document.addEventListener('mouseup', () => {
+    isMouseDown = false;
+  });
+
+  // Tool buttons
+  document.querySelectorAll('[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentTool = btn.dataset.tool;
+      updateToolUI();
+      if (currentTool === 'fill') showToast('🪣 点击区域进行填充');
+      if (currentTool === 'picker') showToast('💉 点击珠子取色');
+    });
+  });
+
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('redoBtn').addEventListener('click', redo);
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    document.getElementById('clearModal').classList.add('show');
+  });
+
+  document.getElementById('clearCancel').addEventListener('click', closeModals);
+  document.getElementById('clearConfirm').addEventListener('click', () => {
+    const emptyGrid = [];
+    for (let r = 0; r < ROWS; r++) {
+      emptyGrid[r] = [];
+      for (let c = 0; c < COLS; c++) emptyGrid[r][c] = null;
+    }
+    grid = emptyGrid;
+    saveState();
+    renderBoard();
+    updateStats();
+    closeModals();
+    showToast('🗑️ 已清空');
+  });
+
+  // Save
+  document.getElementById('saveBtn').addEventListener('click', openSaveModal);
+  document.getElementById('saveConfirm').addEventListener('click', () => {
+    const name = document.getElementById('saveName').value.trim();
+    if (!name) {
+      showToast('⚠️ 请输入设计名称');
+      return;
+    }
+    saveCurrentDesign(name);
+    const list = getSavedDesigns();
+    renderSavedList(document.getElementById('savedList'), list, false);
+    document.getElementById('saveName').value = '';
+  });
+  document.getElementById('saveCancel').addEventListener('click', closeModals);
+  document.getElementById('saveName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('saveConfirm').click();
+  });
+
+  // Load
+  document.getElementById('loadBtn').addEventListener('click', openLoadModal);
+  document.getElementById('loadCancel').addEventListener('click', closeModals);
+
+  // Export
+  document.getElementById('exportBtn').addEventListener('click', exportPNG);
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', (e) => {
+      if (e.target === m) closeModals();
+    });
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'z') { e.preventDefault(); undo(); }
+      if (e.key === 'y') { e.preventDefault(); redo(); }
+      if (e.key === 's') { e.preventDefault(); openSaveModal(); }
+      if (e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); }
+    }
+    if (e.key === 'p') { currentTool = 'pen'; updateToolUI(); }
+    if (e.key === 'e') { currentTool = 'eraser'; updateToolUI(); }
+    if (e.key === 'f') { currentTool = 'fill'; updateToolUI(); showToast('🪣 点击区域进行填充'); }
+    if (e.key === 'i') { currentTool = 'picker'; updateToolUI(); showToast('💉 点击珠子取色'); }
+    if (e.key === 'Escape') closeModals();
+  });
+
+  // Init
+  initGrid();
+  saveState();
+  buildPalette();
+  renderBoard();
+  updateStats();
+
+  // Select first color
+  selectSwatch(0);
+
+  // Handle window resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderBoard, 100);
+  });
+});
+</script>
+</body>
+</html>
