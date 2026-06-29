@@ -200,6 +200,29 @@ html, body {
 
 .color-swatch:hover { transform: scale(1.15); z-index: 2; }
 .color-swatch.active { border-color: var(--accent); transform: scale(1.15); z-index: 1; box-shadow: 0 0 0 2px var(--panel-bg), 0 0 0 4px var(--accent); }
+
+.color-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  pointer-events: none;
+  display: none;
+}
+
+.color-badge.show { display: flex; }
+
 .color-swatch .color-label {
   position: absolute;
   bottom: -18px;
@@ -318,6 +341,114 @@ html, body {
   display: inline-block;
 }
 
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+/* Template grid */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.template-card {
+  background: var(--toolbar-bg);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  border: 2px solid transparent;
+}
+
+.template-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.template-card .preview {
+  width: 100%;
+  aspect-ratio: 5/4;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  display: grid;
+  gap: 0;
+}
+
+.template-card .preview-cell {
+  border-radius: 50%;
+}
+
+.template-card .name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Grid size buttons */
+.grid-size-btn {
+  padding: 6px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+
+.grid-size-btn:hover { border-color: var(--accent); }
+.grid-size-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Shortcut table */
+.shortcut-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.shortcut-table td {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.shortcut-table td:first-child {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.shortcut-table tr:nth-child(even) td {
+  background: var(--toolbar-bg);
+}
+
+.shortcut-table td:last-child {
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+kbd {
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
 /* Modal Overlay */
 .modal-overlay {
   display: none;
@@ -336,11 +467,12 @@ html, body {
   background: var(--panel-bg);
   border-radius: 16px;
   padding: 24px;
-  min-width: 320px;
+  min-width: 340px;
   max-width: 90vw;
   max-height: 80vh;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   transition: background 0.3s;
+  overflow-y: auto;
 }
 
 .modal h2 {
@@ -449,6 +581,36 @@ html, body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Restore bar */
+.restore-bar {
+  display: none;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.restore-bar.show { display: flex; }
+
+.restore-bar button {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+  margin-left: 8px;
+}
+
+.restore-bar button:hover { background: rgba(255,255,255,0.35); }
+
 /* Responsive */
 @media (max-width: 600px) {
   .app-container { padding: 8px; }
@@ -459,6 +621,7 @@ html, body {
   .cell { width: 18px; height: 18px; }
   #board { gap: 1px; }
   .status-bar { font-size: 11px; }
+  .template-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Mobile touch adjustments */
@@ -473,7 +636,19 @@ html, body {
   <!-- Header -->
   <div class="header">
     <h1>🧩 电子<span>拼豆</span></h1>
-    <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+    <div style="display:flex;gap:4px">
+      <button class="theme-toggle" id="shortcutBtn" title="快捷键" style="font-size:16px">⌨️</button>
+      <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+    </div>
+  </div>
+
+  <!-- Restore bar -->
+  <div class="restore-bar" id="restoreBar">
+    <span>💾 检测到上次未保存的设计，要恢复吗？</span>
+    <div>
+      <button id="restoreYes">恢复</button>
+      <button id="restoreNo">不要</button>
+    </div>
   </div>
 
   <!-- Toolbar -->
@@ -490,9 +665,13 @@ html, body {
     </div>
     <div class="tool-group">
       <button class="tool-btn" id="clearBtn">🗑️ 清空</button>
+      <button class="tool-btn" id="templateBtn">📋 模板</button>
+      <button class="tool-btn" id="gridSizeBtn">🔲 画板</button>
+    </div>
+    <div class="tool-group">
       <button class="tool-btn" id="saveBtn">💾 保存</button>
       <button class="tool-btn" id="loadBtn">📂 加载</button>
-      <button class="tool-btn" id="exportBtn">📥 导出PNG</button>
+      <button class="tool-btn" id="exportBtn">📥 导出</button>
     </div>
   </div>
 
@@ -528,6 +707,9 @@ html, body {
       尺寸: <span id="statusSize">30×24</span>
     </span>
   </div>
+
+  <!-- Footer -->
+  <div class="footer">用 ❤️ 拼出来 · Bead Art Studio</div>
 </div>
 
 <!-- Toast -->
@@ -572,10 +754,58 @@ html, body {
   </div>
 </div>
 
+<!-- Template Modal -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal">
+    <h2>📋 选择模板</h2>
+    <div class="template-grid" id="templateGrid"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="templateCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Grid Size Modal -->
+<div class="modal-overlay" id="gridSizeModal">
+  <div class="modal" style="min-width:300px">
+    <h2>🔲 画板大小</h2>
+    <p>改变大小后已有的珠子会居中保留。</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
+      <button class="grid-size-btn" data-cols="20" data-rows="16">小 20×16</button>
+      <button class="grid-size-btn active" data-cols="30" data-rows="24" id="gridSizeMedium">中 30×24</button>
+      <button class="grid-size-btn" data-cols="40" data-rows="32">大 40×32</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="gridSizeCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shortcut Modal -->
+<div class="modal-overlay" id="shortcutModal">
+  <div class="modal" style="min-width:300px">
+    <h2>⌨️ 快捷键</h2>
+    <table class="shortcut-table">
+      <tr><td><kbd>P</kbd></td><td>画笔</td></tr>
+      <tr><td><kbd>E</kbd></td><td>橡皮</td></tr>
+      <tr><td><kbd>F</kbd></td><td>填充</td></tr>
+      <tr><td><kbd>I</kbd></td><td>取色</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>Z</kbd></td><td>撤销</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>Y</kbd></td><td>重做</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>保存</td></tr>
+      <tr><td><kbd>Delete</kbd></td><td>清空</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>关闭弹窗</td></tr>
+    </table>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="shortcutCancel">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== CONFIG =====
-const COLS = 30;
-const ROWS = 24;
+let COLS = 30;
+let ROWS = 24;
 
 const COLORS = [
   { name: '黑色', hex: '#1a1a1a' },
@@ -615,12 +845,127 @@ const COLORS = [
   { name: '银色', hex: '#c0c0c0' },
 ];
 
+// Color lookup
+const C = {};
+COLORS.forEach(c => C[c.name] = c.hex);
+
+// ===== TEMPLATES =====
+const TEMPLATES = [
+  {
+    name: '❤️ 爱心',
+    w: 11, h: 10,
+    data: [
+      '...RR...RR...',
+      '..RRR.RRRR...',
+      '.RRRRRRRRR...',
+      '.RRRRRRRRR...',
+      '..RRRRRRR....',
+      '...RRRRR.....',
+      '....RRR......',
+      '.....R.......',
+    ]
+  },
+  {
+    name: '⭐ 星星',
+    w: 11, h: 11,
+    data: [
+      '.....Y......',
+      '....YYY.....',
+      '...YYYYY....',
+      '..YYYYYYY...',
+      '.YYYYYYYYY..',
+      '..Y.Y.Y.Y...',
+      '.Y..Y.Y..Y..',
+      '...Y.Y.Y....',
+      '..Y..Y..Y...',
+      '.....Y......',
+      '.....Y......',
+    ]
+  },
+  {
+    name: '🐼 熊猫',
+    w: 14, h: 14,
+    data: [
+      '..BB..BB.....',
+      '.BBB.BBB.....',
+      'BBBBB.BBBBB..',
+      'BBBWB.WBBB...',
+      'BBWWW.WWBB...',
+      'BBBWWWWBBB...',
+      '.BBBBBBBB....',
+      '..B.BB.B.....',
+      '..B.BB.B.....',
+      '.BB.BB.BB....',
+      '.B.BBBB.B....',
+      '..BB..BB.....',
+      '..B.BB.B.....',
+      '..BB..BB.....',
+    ]
+  },
+  {
+    name: '🌻 向日葵',
+    w: 13, h: 13,
+    data: [
+      '....YY.YY....',
+      '...YO.YO....',
+      '..YYY.YYY...',
+      '.YYYYYYYYY..',
+      '.YYYYYYYYY..',
+      '.YYY.B.YY...',
+      '..Y.BBB.Y...',
+      '...BB.BB....',
+      '..B..B..B...',
+      '.G..B.B..G..',
+      '..G.B.B.G...',
+      '...G...G....',
+      '....G.G.....',
+    ]
+  },
+  {
+    name: '🐱 猫咪',
+    w: 12, h: 14,
+    data: [
+      '..O.....O....',
+      '.OOO...OOO...',
+      '.OOOOOOOOO...',
+      '..OOOOOOO....',
+      '...OOOOO.....',
+      '..OOOOOOO....',
+      '.OOOOOOOOO...',
+      '.OOO..OOO....',
+      '.O..OO..O....',
+      '.O...O...O...',
+      '..OO...OO....',
+      '...O...O.....',
+      '...OO.OO.....',
+      '....OOO......',
+    ]
+  },
+  {
+    name: '🌈 彩虹',
+    w: 16, h: 10,
+    data: [
+      '................',
+      '..RRRRRRRR....',
+      '.OOOOOOOOOO...',
+      '.YYYYYYYYYY...',
+      '..GGGGGGGG....',
+      '..BBBBBBBB....',
+      '..BBBBBBBB....',
+      '...PPPPPP.....',
+      '................',
+      '................',
+    ]
+  },
+];
+
 // ===== STATE =====
 let grid = [];
 let selectedColor = COLORS[0].hex;
 let currentTool = 'pen';
 let isMouseDown = false;
 let isTouchDown = false;
+let loadedFromAutosave = false;
 
 // Undo/Redo
 const MAX_HISTORY = 50;
@@ -633,7 +978,10 @@ let isDark = localStorage.getItem('bead-theme') === 'dark';
 // Toast timeout
 let toastTimeout = null;
 
-// ===== INIT =====
+// Auto-save interval
+let autoSaveTimer = null;
+
+// ===== HELPERS =====
 function initGrid() {
   grid = [];
   for (let r = 0; r < ROWS; r++) {
@@ -649,12 +997,9 @@ function cloneGrid(g) {
 }
 
 function saveState() {
-  // Remove any states after current index
   historyStack = historyStack.slice(0, historyIndex + 1);
   historyStack.push(cloneGrid(grid));
-  if (historyStack.length > MAX_HISTORY) {
-    historyStack.shift();
-  }
+  if (historyStack.length > MAX_HISTORY) historyStack.shift();
   historyIndex = historyStack.length - 1;
 }
 
@@ -682,6 +1027,83 @@ function redo() {
   }
 }
 
+// ===== TEMPLATE PARSER =====
+function parseTemplate(tpl) {
+  const h = tpl.data.length;
+  const w = Math.max(...tpl.data.map(r => r.length));
+  const result = [];
+  for (let r = 0; r < h; r++) {
+    result[r] = [];
+    for (let c = 0; c < w; c++) {
+      const ch = tpl.data[r][c];
+      if (ch === '.' || ch === ' ') {
+        result[r][c] = null;
+      } else {
+        const colorName = ({ R:'红色', O:'橙色', Y:'黄色', G:'绿色', B:'蓝色', P:'紫色', W:'白色', N:'棕色', K:'黑色', H:'深红', I:'粉色', C:'青色', L:'浅绿', M:'品红', D:'深蓝', E:'米色', F:'金色' })[ch];
+        result[r][c] = colorName ? C[colorName] : null;
+      }
+    }
+  }
+  return { grid: result, w, h };
+}
+
+function applyTemplate(tpl) {
+  const { grid: tGrid, w, h } = parseTemplate(tpl);
+  // Center the template on the current board
+  const offsetX = Math.floor((COLS - w) / 2);
+  const offsetY = Math.floor((ROWS - h) / 2);
+
+  // Clear board first
+  initGrid();
+
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      const gr = r + offsetY;
+      const gc = c + offsetX;
+      if (gr >= 0 && gr < ROWS && gc >= 0 && gc < COLS && tGrid[r][c]) {
+        grid[gr][gc] = tGrid[r][c];
+      }
+    }
+  }
+
+  saveState();
+  renderBoard();
+  updateStats();
+  closeModals();
+  showToast(`📋 已加载「${tpl.name}」`);
+}
+
+function renderTemplatePreview(tpl, container) {
+  const { grid: tGrid, w, h } = parseTemplate(tpl);
+  const maxDim = 80;
+  const cellSize = Math.floor(maxDim / Math.max(w, h));
+  const pw = w * cellSize;
+  const ph = h * cellSize;
+  const preview = document.createElement('div');
+  preview.className = 'preview';
+  preview.style.gridTemplateColumns = `repeat(${w}, ${cellSize}px)`;
+  preview.style.gridTemplateRows = `repeat(${h}, ${cellSize}px)`;
+  preview.style.width = pw + 'px';
+  preview.style.height = ph + 'px';
+
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'preview-cell';
+      cell.style.width = cellSize + 'px';
+      cell.style.height = cellSize + 'px';
+      if (tGrid[r][c]) {
+        cell.style.background = tGrid[r][c];
+      } else {
+        cell.style.background = 'transparent';
+      }
+      preview.appendChild(cell);
+    }
+  }
+
+  return preview;
+}
+
 // ===== PALETTE =====
 function buildPalette() {
   const palette = document.getElementById('palette');
@@ -699,13 +1121,14 @@ function buildPalette() {
     label.textContent = c.name;
     swatch.appendChild(label);
 
-    swatch.addEventListener('click', () => {
-      selectSwatch(i);
-    });
+    const badge = document.createElement('span');
+    badge.className = 'color-badge';
+    badge.id = `badge-${i}`;
+    swatch.appendChild(badge);
 
+    swatch.addEventListener('click', () => selectSwatch(i));
     palette.appendChild(swatch);
   });
-
   updateSwatchBeadCounts();
 }
 
@@ -719,6 +1142,18 @@ function updateSwatchBeadCounts() {
       if (grid[r][c]) colorCounts[grid[r][c]]++;
     }
   }
+  COLORS.forEach((c, i) => {
+    const badge = document.getElementById(`badge-${i}`);
+    if (badge) {
+      const count = colorCounts[c.hex];
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.add('show');
+      } else {
+        badge.classList.remove('show');
+      }
+    }
+  });
 }
 
 function selectSwatch(index) {
@@ -745,21 +1180,16 @@ function renderBoard() {
       cell.dataset.row = r;
       cell.dataset.col = c;
 
-      if (grid[r][c]) {
+      if (grid[r] && grid[r][c]) {
         cell.classList.add('has-bead');
         cell.style.background = grid[r][c];
       } else {
         cell.classList.add('empty');
       }
 
-      // Mouse events
       cell.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        if (e.button === 2) { // right click = erase
-          handleCellAction(r, c, 'eraser');
-          return;
-        }
-        if (e.shiftKey) { // shift + click = erase
+        if (e.button === 2 || e.shiftKey) {
           handleCellAction(r, c, 'eraser');
           return;
         }
@@ -773,24 +1203,16 @@ function renderBoard() {
         }
       });
 
-      cell.addEventListener('mouseup', () => {
-        isMouseDown = false;
-      });
-
-      // Right click handler
       cell.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         handleCellAction(r, c, 'eraser');
       });
 
-      // Touch events
       let longPressTimer = null;
       cell.addEventListener('touchstart', (e) => {
         e.preventDefault();
         isTouchDown = true;
-        const touch = e.changedTouches[0];
         longPressTimer = setTimeout(() => {
-          // Long press = erase
           handleCellAction(r, c, 'eraser');
           isTouchDown = false;
           longPressTimer = null;
@@ -798,27 +1220,18 @@ function renderBoard() {
       }, { passive: false });
 
       cell.addEventListener('touchmove', (e) => {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-        }
-        // Track which cell we're over
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
         const touch = e.changedTouches[0];
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
         if (target && target.classList.contains('cell')) {
           const tr = parseInt(target.dataset.row);
           const tc = parseInt(target.dataset.col);
-          if (!isNaN(tr) && !isNaN(tc) && isTouchDown) {
-            handleCellAction(tr, tc);
-          }
+          if (!isNaN(tr) && !isNaN(tc) && isTouchDown) handleCellAction(tr, tc);
         }
       }, { passive: false });
 
       cell.addEventListener('touchend', (e) => {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-        }
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
         isTouchDown = false;
       }, { passive: false });
 
@@ -829,12 +1242,10 @@ function renderBoard() {
 
 function handleCellAction(row, col, forceTool) {
   const tool = forceTool || currentTool;
-
   switch (tool) {
     case 'pen':
-      if (grid[row][col] !== selectedColor) {
+      if (grid[row] && grid[row][col] !== selectedColor) {
         if (!grid[row][col]) {
-          const oldGrid = cloneGrid(grid);
           grid[row][col] = selectedColor;
           saveState();
           renderBoard();
@@ -842,115 +1253,169 @@ function handleCellAction(row, col, forceTool) {
         }
       }
       break;
-
     case 'eraser':
-      if (grid[row][col] !== null) {
-        const oldGrid = cloneGrid(grid);
+      if (grid[row] && grid[row][col] !== null) {
         grid[row][col] = null;
         saveState();
         renderBoard();
         updateStats();
       }
       break;
-
     case 'fill':
       floodFill(row, col, selectedColor);
       break;
-
     case 'picker':
-      if (grid[row][col]) {
+      if (grid[row] && grid[row][col]) {
         const color = grid[row][col];
         const idx = COLORS.findIndex(c => c.hex === color);
         if (idx !== -1) {
           selectSwatch(idx);
-          currentTool = 'pen';
-          updateToolUI();
-          showToast(`取色: ${COLORS[idx].name}`);
+          finishPicker();
         }
       }
-      // Auto-switch to pen after picking
-      if (!forceTool) {
-        currentTool = 'pen';
-        updateToolUI();
-      }
+      if (!forceTool) finishPicker();
       break;
   }
 }
 
+function finishPicker() {
+  currentTool = 'pen';
+  updateToolUI();
+}
+
 // ===== FLOOD FILL =====
 function floodFill(row, col, newColor) {
-  const targetColor = grid[row][col];
-  if (targetColor === newColor) return;
-
-  if (targetColor === null) {
-    // Fill empty region
-    let changed = false;
-    const visited = new Set();
-    const queue = [[row, col]];
-    visited.add(`${row},${col}`);
-
-    while (queue.length > 0) {
-      const [r, c] = queue.shift();
-      if (grid[r][c] === null) {
-        grid[r][c] = newColor;
-        changed = true;
-      }
-      for (const [nr, nc] of getNeighbors(r, c)) {
-        const key = `${nr},${nc}`;
-        if (!visited.has(key) && grid[nr][nc] === null) {
-          visited.add(key);
-          queue.push([nr, nc]);
-        }
-      }
-    }
-
-    if (changed) {
-      saveState();
-      renderBoard();
-      updateStats();
-      showToast('✅ 填充完成');
-    }
-  } else {
-    // Fill same-color region
-    let changed = false;
-    const visited = new Set();
-    const queue = [[row, col]];
-    visited.add(`${row},${col}`);
-
-    while (queue.length > 0) {
-      const [r, c] = queue.shift();
-      if (grid[r][c] === targetColor) {
-        grid[r][c] = newColor;
-        changed = true;
-      }
-      for (const [nr, nc] of getNeighbors(r, c)) {
-        const key = `${nr},${nc}`;
-        if (!visited.has(key) && grid[nr][nc] === targetColor) {
-          visited.add(key);
-          queue.push([nr, nc]);
-        }
-      }
-    }
-
-    if (changed) {
-      saveState();
-      renderBoard();
-      updateStats();
-      showToast('✅ 填充完成');
-    }
+  const targetColor = grid[row] ? grid[row][col] : undefined;
+  if (targetColor === undefined || targetColor === newColor) return;
+  const changed = bfsFill(row, col, targetColor, newColor);
+  if (changed) {
+    saveState();
+    renderBoard();
+    updateStats();
+    showToast('✅ 填充完成');
   }
 }
 
-function getNeighbors(r, c) {
-  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-  const result = [];
-  for (const [dr, dc] of dirs) {
-    const nr = r + dr, nc = c + dc;
-    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-      result.push([nr, nc]);
+function bfsFill(sr, sc, target, fill) {
+  let changed = false;
+  const visited = new Set();
+  const queue = [[sr, sc]];
+  visited.add(`${sr},${sc}`);
+  while (queue.length) {
+    const [r, c] = queue.shift();
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && grid[r][c] === target) {
+      grid[r][c] = fill;
+      changed = true;
+      for (const [nr, nc] of [[r-1,c],[r+1,c],[r,c-1],[r,c+1]]) {
+        const k = `${nr},${nc}`;
+        if (!visited.has(k) && nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+          visited.add(k);
+          queue.push([nr, nc]);
+        }
+      }
     }
   }
-  return result;
+  return changed;
+}
+
+// ===== GRID SIZE =====
+function resizeGrid(newCols, newRows) {
+  if (newCols === COLS && newRows === ROWS) return;
+
+  const oldGrid = cloneGrid(grid);
+  const oldCols = COLS;
+  const oldRows = ROWS;
+
+  COLS = newCols;
+  ROWS = newRows;
+
+  // Center old content on new grid
+  initGrid();
+  const ox = Math.floor((COLS - oldCols) / 2);
+  const oy = Math.floor((ROWS - oldRows) / 2);
+
+  for (let r = 0; r < oldRows; r++) {
+    for (let c = 0; c < oldCols; c++) {
+      const nr = r + oy;
+      const nc = c + ox;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && oldGrid[r][c]) {
+        grid[nr][nc] = oldGrid[r][c];
+      }
+    }
+  }
+
+  // Update grid size buttons
+  document.querySelectorAll('.grid-size-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.cols) === COLS && parseInt(b.dataset.rows) === ROWS);
+  });
+
+  historyStack = [cloneGrid(grid)];
+  historyIndex = 0;
+  document.getElementById('statusSize').textContent = `${COLS}×${ROWS}`;
+  renderBoard();
+  updateStats();
+}
+
+// ===== AUTO-SAVE =====
+function autoSave() {
+  const data = {
+    grid: cloneGrid(grid),
+    cols: COLS,
+    rows: ROWS,
+    savedAt: Date.now()
+  };
+  localStorage.setItem('bead-autosave', JSON.stringify(data));
+}
+
+function checkAutoSave() {
+  try {
+    const raw = localStorage.getItem('bead-autosave');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data.grid || !data.grid.length) {
+      localStorage.removeItem('bead-autosave');
+      return;
+    }
+    // Check if it's recent (last 24h)
+    if (Date.now() - data.savedAt > 86400000) {
+      localStorage.removeItem('bead-autosave');
+      return;
+    }
+    // Check if there are actually beads
+    const hasBeads = data.grid.some(row => row.some(cell => cell !== null));
+    if (!hasBeads) {
+      localStorage.removeItem('bead-autosave');
+      return;
+    }
+    document.getElementById('restoreBar').classList.add('show');
+  } catch(e) {}
+}
+
+function restoreAutoSave() {
+  try {
+    const raw = localStorage.getItem('bead-autosave');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.cols) { COLS = data.cols; ROWS = data.rows; }
+    grid = cloneGrid(data.grid);
+    historyStack = [cloneGrid(grid)];
+    historyIndex = 0;
+    document.getElementById('statusSize').textContent = `${COLS}×${ROWS}`;
+    document.querySelectorAll('.grid-size-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.cols) === COLS && parseInt(b.dataset.rows) === ROWS);
+    });
+    renderBoard();
+    updateStats();
+    loadedFromAutosave = true;
+    localStorage.removeItem('bead-autosave');
+    document.getElementById('restoreBar').classList.remove('show');
+    showToast('💾 已恢复自动保存的设计');
+  } catch(e) {}
+}
+
+function dismissAutoSave() {
+  localStorage.removeItem('bead-autosave');
+  document.getElementById('restoreBar').classList.remove('show');
 }
 
 // ===== STATS =====
@@ -959,7 +1424,7 @@ function updateStats() {
   updateSwatchBeadCounts();
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      if (grid[r][c]) total++;
+      if (grid[r] && grid[r][c]) total++;
     }
   }
   document.getElementById('beadCount').textContent = `总珠子: ${total}`;
@@ -994,7 +1459,7 @@ function showToast(msg) {
 // ===== EXPORT PNG =====
 function exportPNG() {
   const beadSize = 22;
-  const padding = 8;
+  const padding = 10;
   const w = COLS * beadSize + padding * 2;
   const h = ROWS * beadSize + padding * 2;
 
@@ -1003,11 +1468,9 @@ function exportPNG() {
   canvas.height = h;
   const ctx = canvas.getContext('2d');
 
-  // Background
   ctx.fillStyle = isDark ? '#1a1a2e' : '#f0ebe3';
   ctx.fillRect(0, 0, w, h);
 
-  // Board background
   ctx.fillStyle = isDark ? '#1a1a2e' : '#e8e4da';
   ctx.fillRect(padding, padding, COLS * beadSize, ROWS * beadSize);
 
@@ -1015,26 +1478,21 @@ function exportPNG() {
     for (let c = 0; c < COLS; c++) {
       const x = padding + c * beadSize;
       const y = padding + r * beadSize;
-      const color = grid[r][c];
+      const color = grid[r] ? grid[r][c] : null;
 
       if (color) {
-        // Bead (circle with 3D effect)
         const cx = x + beadSize / 2;
         const cy = y + beadSize / 2;
         const radius = beadSize * 0.42;
-
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
-
-        // Highlight
         ctx.beginPath();
         ctx.arc(cx - radius * 0.2, cy - radius * 0.2, radius * 0.35, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255,255,255,0.25)';
         ctx.fill();
       } else {
-        // Peg dot
         const dx = x + beadSize / 2;
         const dy = y + beadSize / 2;
         ctx.beginPath();
@@ -1054,9 +1512,8 @@ function exportPNG() {
 
 // ===== SAVE / LOAD =====
 function getSavedDesigns() {
-  try {
-    return JSON.parse(localStorage.getItem('bead-designs') || '[]');
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem('bead-designs') || '[]'); }
+  catch { return []; }
 }
 
 function saveDesigns(list) {
@@ -1072,7 +1529,6 @@ function renderSavedList(container, list, isLoad) {
   list.forEach((item, idx) => {
     const div = document.createElement('div');
     div.className = 'saved-item';
-
     const info = document.createElement('div');
     const nameSpan = document.createElement('div');
     nameSpan.className = 'name';
@@ -1083,21 +1539,16 @@ function renderSavedList(container, list, isLoad) {
     dateSpan.textContent = `珠子: ${item.beadCount || '?'} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
     info.appendChild(nameSpan);
     info.appendChild(dateSpan);
-
     const actions = document.createElement('div');
     actions.className = 'actions';
-
     if (isLoad) {
       const loadBtn = document.createElement('button');
       loadBtn.className = 'btn btn-primary';
       loadBtn.textContent = '加载';
       loadBtn.style.padding = '4px 12px';
-      loadBtn.addEventListener('click', () => {
-        loadDesign(item);
-      });
+      loadBtn.addEventListener('click', () => loadDesign(item));
       actions.appendChild(loadBtn);
     }
-
     const delBtn = document.createElement('button');
     delBtn.className = 'btn btn-secondary';
     delBtn.textContent = '✕';
@@ -1110,7 +1561,6 @@ function renderSavedList(container, list, isLoad) {
       showToast('已删除');
     });
     actions.appendChild(delBtn);
-
     div.appendChild(info);
     div.appendChild(actions);
     container.appendChild(div);
@@ -1122,29 +1572,32 @@ function saveCurrentDesign(name) {
   const data = {
     name: name.trim(),
     grid: cloneGrid(grid),
+    cols: COLS,
+    rows: ROWS,
     savedAt: Date.now(),
     beadCount: document.getElementById('statusCount').textContent
   };
-
-  // Replace if same name exists
   const existing = list.findIndex(d => d.name === data.name);
   if (existing !== -1) {
     list[existing] = data;
   } else {
-    // Limit to 20 designs
     if (list.length >= 20) list.shift();
     list.push(data);
   }
-
   saveDesigns(list);
   showToast(`✅ 「${data.name}」已保存`);
   return true;
 }
 
 function loadDesign(item) {
+  if (item.cols) { COLS = item.cols; ROWS = item.rows; }
   grid = cloneGrid(item.grid);
   historyStack = [cloneGrid(grid)];
   historyIndex = 0;
+  document.getElementById('statusSize').textContent = `${COLS}×${ROWS}`;
+  document.querySelectorAll('.grid-size-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.cols) === COLS && parseInt(b.dataset.rows) === ROWS);
+  });
   renderBoard();
   updateStats();
   closeModals();
@@ -1170,6 +1623,23 @@ function openLoadModal() {
   renderSavedList(document.getElementById('loadList'), list, true);
 }
 
+function openTemplateModal() {
+  document.getElementById('templateModal').classList.add('show');
+  const grid = document.getElementById('templateGrid');
+  grid.innerHTML = '';
+  TEMPLATES.forEach(tpl => {
+    const card = document.createElement('div');
+    card.className = 'template-card';
+    card.appendChild(renderTemplatePreview(tpl, card));
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = tpl.name;
+    card.appendChild(name);
+    card.addEventListener('click', () => applyTemplate(tpl));
+    grid.appendChild(card);
+  });
+}
+
 // ===== EVENT LISTENERS =====
 document.addEventListener('DOMContentLoaded', () => {
   // Theme
@@ -1179,10 +1649,7 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
   });
 
-  // Global mouse up
-  document.addEventListener('mouseup', () => {
-    isMouseDown = false;
-  });
+  document.addEventListener('mouseup', () => { isMouseDown = false; });
 
   // Tool buttons
   document.querySelectorAll('[data-tool]').forEach(btn => {
@@ -1200,15 +1667,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('clearBtn').addEventListener('click', () => {
     document.getElementById('clearModal').classList.add('show');
   });
-
   document.getElementById('clearCancel').addEventListener('click', closeModals);
   document.getElementById('clearConfirm').addEventListener('click', () => {
-    const emptyGrid = [];
-    for (let r = 0; r < ROWS; r++) {
-      emptyGrid[r] = [];
-      for (let c = 0; c < COLS; c++) emptyGrid[r][c] = null;
-    }
-    grid = emptyGrid;
+    initGrid();
     saveState();
     renderBoard();
     updateStats();
@@ -1220,10 +1681,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('saveBtn').addEventListener('click', openSaveModal);
   document.getElementById('saveConfirm').addEventListener('click', () => {
     const name = document.getElementById('saveName').value.trim();
-    if (!name) {
-      showToast('⚠️ 请输入设计名称');
-      return;
-    }
+    if (!name) { showToast('⚠️ 请输入设计名称'); return; }
     saveCurrentDesign(name);
     const list = getSavedDesigns();
     renderSavedList(document.getElementById('savedList'), list, false);
@@ -1238,8 +1696,36 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loadBtn').addEventListener('click', openLoadModal);
   document.getElementById('loadCancel').addEventListener('click', closeModals);
 
+  // Template
+  document.getElementById('templateBtn').addEventListener('click', openTemplateModal);
+  document.getElementById('templateCancel').addEventListener('click', closeModals);
+
+  // Grid size
+  document.getElementById('gridSizeBtn').addEventListener('click', () => {
+    document.getElementById('gridSizeModal').classList.add('show');
+  });
+  document.getElementById('gridSizeCancel').addEventListener('click', closeModals);
+  document.querySelectorAll('.grid-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const nc = parseInt(btn.dataset.cols);
+      const nr = parseInt(btn.dataset.rows);
+      resizeGrid(nc, nr);
+      closeModals();
+    });
+  });
+
+  // Shortcuts modal
+  document.getElementById('shortcutBtn').addEventListener('click', () => {
+    document.getElementById('shortcutModal').classList.add('show');
+  });
+  document.getElementById('shortcutCancel').addEventListener('click', closeModals);
+
   // Export
   document.getElementById('exportBtn').addEventListener('click', exportPNG);
+
+  // Restore auto-save
+  document.getElementById('restoreYes').addEventListener('click', restoreAutoSave);
+  document.getElementById('restoreNo').addEventListener('click', dismissAutoSave);
 
   // Close modals on overlay click
   document.querySelectorAll('.modal-overlay').forEach(m => {
@@ -1251,15 +1737,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'z') { e.preventDefault(); undo(); }
-      if (e.key === 'y') { e.preventDefault(); redo(); }
+      if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
       if (e.key === 's') { e.preventDefault(); openSaveModal(); }
-      if (e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); }
     }
     if (e.key === 'p') { currentTool = 'pen'; updateToolUI(); }
     if (e.key === 'e') { currentTool = 'eraser'; updateToolUI(); }
     if (e.key === 'f') { currentTool = 'fill'; updateToolUI(); showToast('🪣 点击区域进行填充'); }
     if (e.key === 'i') { currentTool = 'picker'; updateToolUI(); showToast('💉 点击珠子取色'); }
+    if (e.key === 'Delete') {
+      e.preventDefault();
+      document.getElementById('clearModal').classList.add('show');
+    }
     if (e.key === 'Escape') closeModals();
   });
 
@@ -1269,16 +1758,24 @@ document.addEventListener('DOMContentLoaded', () => {
   buildPalette();
   renderBoard();
   updateStats();
-
-  // Select first color
   selectSwatch(0);
+  document.getElementById('statusSize').textContent = `${COLS}×${ROWS}`;
 
-  // Handle window resize
+  // Auto-save every 30s
+  autoSaveTimer = setInterval(autoSave, 30000);
+
+  // Check for auto-save on load (delay to not conflict with init)
+  setTimeout(checkAutoSave, 500);
+
+  // Resize handler
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(renderBoard, 100);
   });
+
+  // Save on page unload
+  window.addEventListener('beforeunload', autoSave);
 });
 </script>
 </body>
