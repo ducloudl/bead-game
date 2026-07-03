@@ -61,22 +61,27 @@
   // ===== Board =====
   var Board = (function() {
     function Board(rows, cols) {
-      this.rows = rows || 24;
-      this.cols = cols || 30;
-      this.grid = [];
-      for (var r = 0; r < this.rows; r++) {
-        this.grid[r] = [];
-        for (var c = 0; c < this.cols; c++) {
-          this.grid[r][c] = null;
+          console.log('Board constructor called');
+          this.rows = rows || 24;
+          this.cols = cols || 30;
+          this.grid = [];
+          for (var r = 0; r < this.rows; r++) {
+            this.grid[r] = [];
+            for (var c = 0; c < this.cols; c++) {
+              this.grid[r][c] = null;
+            }
+          }
+          console.log('Grid initialized:', this.rows, 'x', this.cols);
+          this.element = document.getElementById('board');
+          if (!this.element) {
+            console.error('Board element not found!');
+            return;
+          }
+          console.log('Board element found');
+          this.element.style.gridTemplateColumns = 'repeat(' + this.cols + ', 1fr)';
+          this.element.style.gridTemplateRows = 'repeat(' + this.rows + ', 1fr)';
+          this._render();
         }
-      }
-      this.element = document.getElementById('board');
-      if (this.element) {
-        this.element.style.gridTemplateColumns = 'repeat(' + this.cols + ', 1fr)';
-        this.element.style.gridTemplateRows = 'repeat(' + this.rows + ', 1fr)';
-      }
-      this._render();
-    }
     Board.prototype._render = function() {
       if (!this.element) return;
       this.element.innerHTML = '';
