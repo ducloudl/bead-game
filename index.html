@@ -7,11 +7,8 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- 顶部状态栏 -->
   <header class="top-bar">
-    <div class="top-left">
-      <h1 class="logo">🎨 拼豆</h1>
-    </div>
+    <div class="top-left"><h1 class="logo">🎨 拼豆</h1></div>
     <div class="top-center">
       <span class="stat-badge"><span id="bead-count">0</span> 颗</span>
       <span class="stat-badge" id="grid-size-label">30×24</span>
@@ -24,55 +21,32 @@
     </div>
   </header>
 
-  <!-- 画布区域 -->
   <main class="canvas-area">
     <div class="board-wrapper">
       <div id="board" class="board"></div>
     </div>
   </main>
 
-  <!-- 底部工具栏 -->
   <footer class="bottom-bar">
-    <!-- 工具选择 -->
     <div class="tools-strip">
-      <button class="tool-item active" data-tool="pen" title="画笔">
-        <span class="tool-icon">✏️</span>
-        <span class="tool-label">画笔</span>
-      </button>
-      <button class="tool-item" data-tool="eraser" title="橡皮">
-        <span class="tool-icon">🧹</span>
-        <span class="tool-label">橡皮</span>
-      </button>
-      <button class="tool-item" data-tool="picker" title="取色">
-        <span class="tool-icon">💉</span>
-        <span class="tool-label">取色</span>
-      </button>
-      <button class="tool-item" data-tool="fill" title="填充">
-        <span class="tool-icon">🪣</span>
-        <span class="tool-label">填充</span>
-      </button>
+      <button class="tool-item active" data-tool="pen" title="画笔"><span class="tool-icon">✏️</span><span class="tool-label">画笔</span></button>
+      <button class="tool-item" data-tool="eraser" title="橡皮"><span class="tool-icon">🧹</span><span class="tool-label">橡皮</span></button>
+      <button class="tool-item" data-tool="picker" title="取色"><span class="tool-icon">💉</span><span class="tool-label">取色</span></button>
+      <button class="tool-item" data-tool="fill" title="填充"><span class="tool-icon">🪣</span><span class="tool-label">填充</span></button>
     </div>
-
-    <!-- 当前颜色指示 -->
     <div class="current-color-bar">
       <span class="current-color-label">当前：</span>
       <div class="current-color-preview" id="current-color-preview"></div>
     </div>
-
-    <!-- 颜色选择区 - 可横向滚动 -->
     <div class="colors-scroll-area">
       <div class="color-grid" id="color-palette"></div>
     </div>
-
-    <!-- 高级功能折叠 -->
     <div class="advanced-toggle">
       <button class="adv-btn" id="adv-toggle">⚙️ 更多功能 ▾</button>
       <div class="adv-panel" id="adv-panel">
         <div class="adv-section">
           <label>模板</label>
-          <select id="template-select">
-            <option value="">-- 选择模板 --</option>
-          </select>
+          <select id="template-select"><option value="">-- 选择模板 --</option></select>
           <button class="adv-action-btn" id="apply-template-btn">应用模板</button>
         </div>
         <div class="adv-section">
@@ -83,6 +57,519 @@
     </div>
   </footer>
 
-  <script type="module" src="js/app.js"></script>
+  <script>
+  // ===== Board =====
+  var Board = /** @class */ (function () {
+    function Board(rows, cols) {
+      var _this = this;
+      this.rows = rows || 24;
+      this.cols = cols || 30;
+      this.grid = [];
+      for (var r = 0; r < this.rows; r++) {
+        this.grid[r] = [];
+        for (var c = 0; c < this.cols; c++) {
+          this.grid[r][c] = null;
+        }
+      }
+      this.element = document.getElementById('board');
+      if (this.element) {
+        this.element.style.gridTemplateColumns = 'repeat(' + this.cols + ', 1fr)';
+        this.element.style.gridTemplateRows = 'repeat(' + this.rows + ', 1fr)';
+      }
+      this._render = function () {
+        if (!_this.element) return;
+        _this.element.innerHTML = '';
+        for (var r = 0; r < _this.rows; r++) {
+          for (var c = 0; c < _this.cols; c++) {
+            var cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            var color = _this.grid[r][c];
+            if (color) {
+              cell.style.backgroundColor = color;
+              cell.classList.add('has-bead');
+            }
+            _this.element.appendChild(cell);
+          }
+        }
+      };
+      this._render();
+    }
+    Board.prototype.setCell = function (row, col, color) {
+      this.grid[row][col] = color;
+      if (this.element) {
+        var cell = this.element.querySelector('[data-row="' + row + '"][data-col="' + col + '"]');
+        if (cell) {
+          cell.style.backgroundColor = color || '';
+          cell.classList.toggle('has-bead', !!color);
+        }
+      }
+    };
+    Board.prototype.getCell = function (row, col) {
+      return this.grid[row] ? this.grid[row][col] : null;
+    };
+    Board.prototype.clear = function () {
+      var _this = this;
+      this.grid = [];
+      for (var r = 0; r < this.rows; r++) {
+        this.grid[r] = [];
+        for (var c = 0; c < this.cols; c++) {
+          this.grid[r][c] = null;
+        }
+      }
+      this._render();
+    };
+    Board.prototype.countBeads = function () {
+      var count = 0;
+      for (var r = 0; r < this.rows; r++) {
+        for (var c = 0; c < this.cols; c++) {
+          if (this.grid[r][c]) count++;
+        }
+      }
+      return count;
+    };
+    Board.prototype.render = function () { this._render(); };
+    return Board;
+  }());
+
+  // ===== StateManager =====
+  var StateManager = /** @class */ (function () {
+    function StateManager(board) {
+      var _this = this;
+      this.board = board;
+      this.history = [];
+      this.future = [];
+      this.maxHistory = 50;
+      this.isProcessing = false;
+      this.saveState();
+      try {
+        var saved = localStorage.getItem('bead-game-state');
+        if (saved) {
+          var parsed = JSON.parse(saved);
+          if (parsed && parsed.length === this.board.rows && parsed[0] && parsed[0].length === this.board.cols) {
+            this.board.grid = parsed;
+            this.board.render();
+            this.history.push(parsed.map(function (row) { return row.slice(); }));
+          }
+        }
+      } catch (e) { console.warn('Restore failed:', e); }
+    }
+    StateManager.prototype.saveState = function () {
+      if (this.isProcessing) return;
+      var state = this.board.grid.map(function (row) { return row.slice(); });
+      this.history.push(state);
+      if (this.history.length > this.maxHistory) this.history.shift();
+      this.future = [];
+      try { localStorage.setItem('bead-game-state', JSON.stringify(this.board.grid)); } catch (e) {}
+    };
+    StateManager.prototype.undo = function () {
+      var _this = this;
+      if (this.history.length <= 1) return;
+      this.isProcessing = true;
+      var currentState = this.history.pop();
+      this.future.push(currentState);
+      var prevState = this.history[this.history.length - 1];
+      this.board.grid = prevState.map(function (row) { return row.slice(); });
+      this.board.render();
+      this.isProcessing = false;
+      try { localStorage.setItem('bead-game-state', JSON.stringify(this.board.grid)); } catch (e) {}
+    };
+    StateManager.prototype.redo = function () {
+      var _this = this;
+      if (this.future.length === 0) return;
+      this.isProcessing = true;
+      var nextState = this.future.pop();
+      this.history.push(nextState);
+      this.board.grid = nextState.map(function (row) { return row.slice(); });
+      this.board.render();
+      this.isProcessing = false;
+      try { localStorage.setItem('bead-game-state', JSON.stringify(this.board.grid)); } catch (e) {}
+    };
+    return StateManager;
+  }());
+
+  // ===== Templates =====
+  var Templates = /** @class */ (function () {
+    function Templates(board, tools) {
+      this.board = board;
+      this.tools = tools;
+      this.templateDefs = {
+        'heart': { name: '❤️ 爱心', pattern: [
+          [0,1,1,0,0,1,1,0],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],
+          [0,1,1,1,1,1,1,0],[0,0,1,1,1,1,0,0],[0,0,0,1,1,0,0,0],[0,0,0,0,0,0,0,0]
+        ]},
+        'star': { name: '⭐ 星星', pattern: [
+          [0,0,1,0,0,1,0,0],[0,0,0,1,1,0,0,0],[1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,0],
+          [1,1,1,1,1,1,1,1],[0,0,0,1,1,0,0,0],[0,0,1,0,0,1,0,0],[0,0,0,0,0,0,0,0]
+        ]},
+        'smiley': { name: '😊 笑脸', pattern: [
+          [0,0,1,1,1,1,0,0],[0,1,1,1,1,1,1,0],[1,1,0,1,1,0,1,1],[1,1,1,1,1,1,1,1],
+          [1,1,0,1,1,0,1,1],[1,1,1,1,1,1,1,1],[0,1,0,1,1,0,1,0],[0,0,0,0,0,0,0,0]
+        ]}
+      };
+    }
+    Templates.prototype.loadTemplates = function () {
+      var select = document.getElementById('template-select');
+      if (!select) return;
+      var _this = this;
+      Object.keys(this.templateDefs).forEach(function (key) {
+        var def = _this.templateDefs[key];
+        var option = document.createElement('option');
+        option.value = key;
+        option.textContent = def.name;
+        select.appendChild(option);
+      });
+    };
+    Templates.prototype.applyTemplate = function (templateName, defaultColor) {
+      if (!defaultColor) defaultColor = '#FF0000';
+      var def = this.templateDefs[templateName];
+      if (!def) return;
+      var pattern = def.pattern;
+      var rows = pattern.length;
+      var cols = pattern[0].length;
+      var startRow = Math.floor((this.board.rows - rows) / 2);
+      var startCol = Math.floor((this.board.cols - cols) / 2);
+      for (var r = 0; r < rows; r++) {
+        for (var c = 0; c < cols; c++) {
+          if (pattern[r][c]) {
+            var br = startRow + r;
+            var bc = startCol + c;
+            if (br >= 0 && br < this.board.rows && bc >= 0 && bc < this.board.cols) {
+              this.board.setCell(br, bc, defaultColor);
+            }
+          }
+        }
+      }
+    };
+    Templates.prototype.processImage = function (file, callback) {
+      var _this = this;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var canvas = document.createElement('canvas');
+          var ctx = canvas.getContext('2d');
+          var scale = Math.min(_this.board.cols / img.width, _this.board.rows / img.height);
+          canvas.width = Math.floor(img.width * scale);
+          canvas.height = Math.floor(img.height * scale);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var pixels = imageData.data;
+          _this.board.clear();
+          var cellW = _this.board.cols / canvas.width;
+          var cellH = _this.board.rows / canvas.height;
+          for (var y = 0; y < canvas.height; y++) {
+            for (var x = 0; x < canvas.width; x++) {
+              var idx = (y * canvas.width + x) * 4;
+              var r = pixels[idx], g = pixels[idx+1], b = pixels[idx+2];
+              if (r + g + b < 5) continue;
+              var color = _this.findClosestColor(r, g, b);
+              var boardX = Math.floor(x * cellW);
+              var boardY = Math.floor(y * cellH);
+              if (boardY >= 0 && boardY < _this.board.rows && boardX >= 0 && boardX < _this.board.cols) {
+                _this.board.setCell(boardY, boardX, color);
+              }
+            }
+          }
+          callback && callback();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    Templates.prototype.findClosestColor = function (r, g, b) {
+      var palettes = [
+        {r:255,g:0,b:0},{r:255,g:102,b:0},{r:255,g:153,b:0},{r:255,g:255,b:0},
+        {r:255,g:255,b:153},{r:255,g:204,b:153},{r:153,g:102,b:51},{r:102,g:51,b:0},
+        {r:204,g:153,b:0},{r:0,g:255,b:0},{r:0,g:153,b:102},{r:0,g:102,b:51},
+        {r:0,g:255,b:255},{r:0,g:153,b:204},{r:0,g:0,b:255},{r:0,g:51,b:204},
+        {r:102,g:153,b:255},{r:153,g:204,b:255},{r:255,g:0,b:255},{r:255,g:204,b:204},
+        {r:204,g:0,b:0},{r:153,g:0,b:0},{r:255,g:51,b:0},{r:255,g:102,b:51},
+        {r:255,g:153,b:102},{r:255,g:204,b:204},{r:153,g:153,b:153},{r:102,g:102,b:102},
+        {r:51,g:51,b:51},{r:255,g:255,b:255},{r:0,g:0,b:0}
+      ];
+      var minDist = Infinity, closest = palettes[0];
+      for (var i = 0; i < palettes.length; i++) {
+        var p = palettes[i];
+        var dr = r-p.r, dg = g-p.g, db = b-p.b;
+        var dist = dr*dr + dg*dg + db*db;
+        if (dist < minDist) { minDist = dist; closest = p; }
+      }
+      return '#' + closest.r.toString(16).padStart(2,'0') + closest.g.toString(16).padStart(2,'0') + closest.b.toString(16).padStart(2,'0');
+    };
+    return Templates;
+  }());
+
+  // ===== UIManager =====
+  var UIManager = /** @class */ (function () {
+    function UIManager(board, tools, state, templates) {
+      this.board = board;
+      this.tools = tools;
+      this.state = state;
+      this.templates = templates;
+      this.colors = [
+        {name:'红色',hex:'#FF0000'},{name:'橙色',hex:'#FF6600'},{name:'深橙',hex:'#FF9900'},
+        {name:'黄色',hex:'#FFFF00'},{name:'浅黄',hex:'#FFFF99'},{name:'米色',hex:'#FFCC99'},
+        {name:'棕色',hex:'#996633'},{name:'深棕',hex:'#663300'},{name:'金色',hex:'#CC9900'},
+        {name:'绿色',hex:'#00FF00'},{name:'浅绿',hex:'#009966'},{name:'深绿',hex:'#006633'},
+        {name:'青色',hex:'#00FFFF'},{name:'天蓝',hex:'#0099CC'},{name:'蓝色',hex:'#0000FF'},
+        {name:'深蓝',hex:'#0033CC'},{name:'海军蓝',hex:'#6699FF'},{name:'浅蓝',hex:'#99CCFF'},
+        {name:'紫色',hex:'#FF00FF'},{name:'粉色',hex:'#FFCCCC'},{name:'深红',hex:'#CC0000'},
+        {name:'暗红',hex:'#990000'},{name:'鲜红',hex:'#FF3300'},{name:'玫红',hex:'#FF6633'},
+        {name:'桃红',hex:'#FF9966'},{name:'珊瑚',hex:'#FFCCCC'},
+        {name:'灰色',hex:'#999999'},{name:'中灰',hex:'#666666'},{name:'深灰',hex:'#333333'},
+        {name:'白色',hex:'#FFFFFF'},{name:'黑色',hex:'#000000'}
+      ];
+    }
+    UIManager.prototype.initialize = function () {
+      this.generateColorPalette();
+      this.setupEventListeners();
+      this.updateStats();
+      var firstSwatch = document.querySelector('.color-swatch');
+      if (firstSwatch) this.tools.selectColor(firstSwatch.dataset.color);
+    };
+    UIManager.prototype.generateColorPalette = function () {
+      var container = document.getElementById('color-palette');
+      if (!container) return;
+      container.innerHTML = '';
+      var _this = this;
+      this.colors.forEach(function (color) {
+        var swatch = document.createElement('div');
+        swatch.className = 'color-swatch';
+        swatch.dataset.color = color.hex;
+        swatch.style.backgroundColor = color.hex;
+        swatch.title = color.name;
+        if (color.hex === '#000000' || color.hex === '#333333' || color.hex === '#666666' || color.hex === '#999999') {
+          swatch.style.border = '2px solid #ccc';
+        }
+        swatch.addEventListener('click', function () { _this.tools.selectColor(color.hex); });
+        container.appendChild(swatch);
+      });
+    };
+    UIManager.prototype.setupEventListeners = function () {
+      var _this = this;
+      var undoBtn = document.getElementById('undo-btn');
+      var redoBtn = document.getElementById('redo-btn');
+      var clearBtn = document.getElementById('clear-btn');
+      var exportBtn = document.getElementById('export-btn');
+      if (undoBtn) undoBtn.addEventListener('click', function () { _this.state.undo(); });
+      if (redoBtn) redoBtn.addEventListener('click', function () { _this.state.redo(); });
+      if (clearBtn) clearBtn.addEventListener('click', function () {
+        if (confirm('确定要清空画布吗？')) { _this.state.saveState(); _this.board.clear(); _this.updateStats(); }
+      });
+      if (exportBtn) exportBtn.addEventListener('click', function () { _this.exportToPNG(); });
+      // Advanced toggle
+      var advToggle = document.getElementById('adv-toggle');
+      var advPanel = document.getElementById('adv-panel');
+      if (advToggle && advPanel) {
+        advToggle.addEventListener('click', function () {
+          advPanel.classList.toggle('open');
+          advToggle.textContent = advPanel.classList.contains('open') ? '⚙️ 收起功能 ▴' : '⚙️ 更多功能 ▾';
+        });
+      }
+      // Template apply
+      var applyBtn = document.getElementById('apply-template-btn');
+      if (applyBtn) {
+        applyBtn.addEventListener('click', function () {
+          var sel = document.getElementById('template-select');
+          if (sel.value) { _this.templates.applyTemplate(sel.value, _this.tools.selectedColor); _this.updateStats(); }
+        });
+      }
+      // Image upload
+      var uploadInput = document.getElementById('image-upload');
+      if (uploadInput) {
+        uploadInput.addEventListener('change', function (e) {
+          var file = e.target.files[0];
+          if (file) { _this.templates.processImage(file, function () { _this.updateStats(); }); uploadInput.value = ''; }
+        });
+      }
+      // Keyboard
+      document.addEventListener('keydown', function (e) {
+        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); _this.state.undo(); }
+        if (e.ctrlKey && e.key === 'y') { e.preventDefault(); _this.state.redo(); }
+      });
+    };
+    UIManager.prototype.updateStats = function () {
+      var el = document.getElementById('bead-count');
+      if (el) el.textContent = String(this.board.countBeads());
+    };
+    UIManager.prototype.exportToPNG = function () {
+      var canvas = document.createElement('canvas');
+      var ctx = canvas.getContext('2d');
+      var cellPx = 15;
+      canvas.width = this.board.cols * cellPx;
+      canvas.height = this.board.rows * cellPx;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      for (var r = 0; r < this.board.rows; r++) {
+        for (var c = 0; c < this.board.cols; c++) {
+          var color = this.board.grid[r][c];
+          if (color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(c * cellPx + cellPx/2, r * cellPx + cellPx/2, cellPx/2 - 1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      var link = document.createElement('a');
+      link.download = '拼豆作品_' + Date.now() + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    return UIManager;
+  }());
+
+  // ===== Tools =====
+  var Tools = /** @class */ (function () {
+    function Tools(board, uiManager) {
+      this.board = board;
+      this.uiManager = uiManager;
+      this.currentTool = 'pen';
+      this.selectedColor = '#000000';
+      this.isDrawing = false;
+      this.lastCell = null;
+      var _this = this;
+      if (this.board.element) {
+        // Touch
+        this.board.element.addEventListener('touchstart', function (e) {
+          if (e.target.classList.contains('cell')) {
+            e.preventDefault();
+            _this.isDrawing = true;
+            _this.handleCellInteraction(e.touches[0]);
+          }
+        }, { passive: false });
+        this.board.element.addEventListener('touchmove', function (e) {
+          if (_this.isDrawing && e.target.classList.contains('cell')) {
+            e.preventDefault();
+            _this.handleCellInteraction(e.touches[0]);
+          }
+        }, { passive: false });
+        this.board.element.addEventListener('touchend', function () {
+          _this.isDrawing = false;
+          _this.lastCell = null;
+        });
+        // Mouse
+        this.board.element.addEventListener('mousedown', function (e) {
+          if (e.target.classList.contains('cell')) {
+            _this.isDrawing = true;
+            _this.handleCellInteraction(e);
+          }
+        });
+        document.addEventListener('mouseup', function () {
+          _this.isDrawing = false;
+          _this.lastCell = null;
+        });
+        this.board.element.addEventListener('mousemove', function (e) {
+          if (_this.isDrawing && e.target.classList.contains('cell')) {
+            _this.handleCellInteraction(e);
+          }
+        });
+        // Tool buttons
+        document.querySelectorAll('.tool-item[data-tool]').forEach(function (btn) {
+          btn.addEventListener('click', function () { _this.selectTool(btn.dataset.tool); });
+        });
+      }
+      this.updateColorPreview();
+    }
+    Tools.prototype.handleCellInteraction = function (e) {
+      var rect = this.board.element.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+      var cellWidth = rect.width / this.board.cols;
+      var cellHeight = rect.height / this.board.rows;
+      var col = Math.floor(x / cellWidth);
+      var row = Math.floor(y / cellHeight);
+      if (row < 0 || row >= this.board.rows || col < 0 || col >= this.board.cols) return;
+      if (this.lastCell && this.lastCell[0] === row && this.lastCell[1] === col) return;
+      this.lastCell = [row, col];
+      switch (this.currentTool) {
+        case 'pen': this.placeBead(row, col); break;
+        case 'eraser': this.removeBead(row, col); break;
+        case 'picker': this.pickColor(row, col); break;
+        case 'fill': this.floodFill(row, col); break;
+      }
+    };
+    Tools.prototype.placeBead = function (row, col) {
+      if (this.board.getCell(row, col) !== this.selectedColor) {
+        this.board.setCell(row, col, this.selectedColor);
+        this.uiManager && this.uiManager.updateStats && this.uiManager.updateStats();
+        this.uiManager && this.uiManager.state && this.uiManager.state.saveState();
+      }
+    };
+    Tools.prototype.removeBead = function (row, col) {
+      if (this.board.getCell(row, col)) {
+        this.board.setCell(row, col, null);
+        this.uiManager && this.uiManager.state && this.uiManager.state.saveState();
+      }
+    };
+    Tools.prototype.pickColor = function (row, col) {
+      var color = this.board.getCell(row, col);
+      if (color) {
+        this.selectedColor = color;
+        this.updateColorPreview();
+        this.selectTool('pen');
+      }
+    };
+    Tools.prototype.floodFill = function (startRow, startCol) {
+      var _this = this;
+      var targetColor = this.board.getCell(startRow, startCol);
+      if (!targetColor) return;
+      var queue = [[startRow, startCol]];
+      var visited = {};
+      visited[startRow + ',' + startCol] = true;
+      while (queue.length > 0) {
+        var _a = queue.shift(), r = _a[0], c = _a[1];
+        var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (var i = 0; i < dirs.length; i++) {
+          var nr = r + dirs[i][0];
+          var nc = c + dirs[i][1];
+          if (nr >= 0 && nr < this.board.rows && nc >= 0 && nc < this.board.cols &&
+              !visited[nr+','+nc] && this.board.getCell(nr, nc) === targetColor) {
+            visited[nr+','+nc] = true;
+            this.board.setCell(nr, nc, this.selectedColor);
+            queue.push([nr, nc]);
+          }
+        }
+      }
+      this.uiManager && this.uiManager.state && this.uiManager.state.saveState();
+    };
+    Tools.prototype.selectTool = function (tool) {
+      this.currentTool = tool;
+      document.querySelectorAll('.tool-item').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.tool === tool);
+      });
+    };
+    Tools.prototype.selectColor = function (color) {
+      var _this = this;
+      this.selectedColor = color;
+      this.updateColorPreview();
+      document.querySelectorAll('.color-swatch').forEach(function (swatch) {
+        swatch.classList.toggle('selected', swatch.dataset.color === color);
+      });
+      this.selectTool('pen');
+    };
+    Tools.prototype.updateColorPreview = function () {
+      var preview = document.getElementById('current-color-preview');
+      if (preview) preview.style.background = this.selectedColor;
+    };
+    return Tools;
+  }());
+
+  // ===== Init =====
+  document.addEventListener('DOMContentLoaded', function () {
+    var board = new Board(24, 30);
+    var state = new StateManager(board);
+    var templates = new Templates(board, null);
+    var uiManager = new UIManager(board, null, state, templates);
+    var tools = new Tools(board, uiManager);
+    uiManager.tools = tools;
+    uiManager.initialize();
+    templates.loadTemplates();
+    tools.selectTool('pen');
+    window.app = { board: board, tools: tools, state: state, ui: uiManager };
+  });
+  </script>
 </body>
 </html>
