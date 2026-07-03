@@ -1,9 +1,0 @@
-{
-  "buildCommand": "",
-  "outputDirectory": ".",
-  "installCommand": "",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ]
-}

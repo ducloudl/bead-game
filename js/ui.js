@@ -5,8 +5,6 @@ export class UIManager {
     this.tools = tools;
     this.state = state;
     this.templates = templates;
-
-    // Bead color palette - matching the colors used in findClosestColor
     this.colors = [
       { name: '红色', hex: '#FF0000' },
       { name: '橙色', hex: '#FF6600' },
@@ -43,20 +41,18 @@ export class UIManager {
   }
 
   async initialize() {
-    // Generate color palette dynamically
     this.generateColorPalette();
-
-    // Setup all event listeners
     this.setupEventListeners();
-
-    // Wire up template apply button
+    this.setupAdvancedToggle();
     this.setupTemplateApply();
-
-    // Wire up image upload
     this.setupImageUpload();
-
-    // Initial stats update
     this.updateStats();
+    
+    // Select first color by default
+    const firstSwatch = document.querySelector('.color-swatch');
+    if (firstSwatch) {
+      this.tools.selectColor(firstSwatch.dataset.color);
+    }
   }
 
   generateColorPalette() {
@@ -72,10 +68,10 @@ export class UIManager {
       swatch.style.backgroundColor = color.hex;
       swatch.title = color.name;
 
-      // Skip dark colors for visibility of selection border
+      // Dark colors need visible border
       if (color.hex === '#000000' || color.hex === '#333333' ||
           color.hex === '#666666' || color.hex === '#999999') {
-        swatch.style.border = '1px solid #ccc';
+        swatch.style.border = '2px solid #ccc';
       }
 
       paletteContainer.appendChild(swatch);
@@ -83,47 +79,48 @@ export class UIManager {
   }
 
   setupEventListeners() {
-    // Tool buttons
-    document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.tools.selectTool(btn.dataset.tool);
-      });
-    });
-
-    // Color swatches
-    document.querySelectorAll('.color-swatch').forEach(swatch => {
-      swatch.addEventListener('click', () => {
-        this.tools.selectColor(swatch.dataset.color);
-      });
-    });
-
     // Undo/Redo
-    document.getElementById('undo-btn').addEventListener('click', () => {
-      this.state.undo();
-    });
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const exportBtn = document.getElementById('export-btn');
 
-    document.getElementById('redo-btn').addEventListener('click', () => {
-      this.state.redo();
-    });
-
-    // Clear board
-    document.getElementById('clear-btn').addEventListener('click', () => {
-      if (confirm('确定要清空画布吗？')) {
-        this.state.saveState();
-        this.board.clear();
-        this.updateStats();
-      }
-    });
-
-    // Export
-    document.getElementById('export-btn').addEventListener('click', () => {
-      this.exportToPNG();
-    });
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => this.state.undo());
+    }
+    if (redoBtn) {
+      redoBtn.addEventListener('click', () => this.state.redo());
+    }
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (confirm('确定要清空画布吗？')) {
+          this.state.saveState();
+          this.board.clear();
+          this.updateStats();
+        }
+      });
+    }
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => this.exportToPNG());
+    }
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       this.handleKeyboard(e);
     });
+  }
+
+  setupAdvancedToggle() {
+    const toggleBtn = document.getElementById('adv-toggle');
+    const panel = document.getElementById('adv-panel');
+    if (toggleBtn && panel) {
+      toggleBtn.addEventListener('click', () => {
+        panel.classList.toggle('open');
+        toggleBtn.textContent = panel.classList.contains('open') 
+          ? '⚙️ 收起功能 ▴' 
+          : '⚙️ 更多功能 ▾';
+      });
+    }
   }
 
   setupTemplateApply() {
@@ -149,7 +146,6 @@ export class UIManager {
           this.templates.processImage(file, () => {
             this.updateStats();
           });
-          // Reset input so same file can be re-uploaded
           uploadInput.value = '';
         }
       });
@@ -157,110 +153,53 @@ export class UIManager {
   }
 
   handleKeyboard(e) {
-    // Ctrl+Z - Undo
     if (e.ctrlKey && e.key === 'z') {
       e.preventDefault();
       this.state.undo();
     }
-
-    // Ctrl+Y - Redo
     if (e.ctrlKey && e.key === 'y') {
       e.preventDefault();
       this.state.redo();
     }
+  }
 
-    // Number keys for tools
-    if (e.altKey) {
-      switch (e.key) {
-        case '1': this.tools.selectTool('pen'); break;
-        case '2': this.tools.selectTool('eraser'); break;
-        case '3': this.tools.selectTool('picker'); break;
-        case '4': this.tools.selectTool('fill'); break;
-      }
+  saveState() {
+    this.state.saveState();
+  }
+
+  updateStats() {
+    const countEl = document.getElementById('bead-count');
+    if (countEl) {
+      countEl.textContent = this.board.countBeads();
     }
   }
 
   exportToPNG() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+    const cellPx = 15;
+    
+    canvas.width = this.board.cols * cellPx;
+    canvas.height = this.board.rows * cellPx;
 
-    canvas.width = this.board.cols * this.board.cellSize;
-    canvas.height = this.board.rows * this.board.cellSize;
-
-    // Fill white background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw beads
     for (let r = 0; r < this.board.rows; r++) {
       for (let c = 0; c < this.board.cols; c++) {
         const color = this.board.grid[r][c];
         if (color) {
           ctx.fillStyle = color;
           ctx.beginPath();
-          ctx.arc(
-            c * this.board.cellSize + this.board.cellSize / 2,
-            r * this.board.cellSize + this.board.cellSize / 2,
-            this.board.cellSize / 2 - 1,
-            0,
-            Math.PI * 2
-          );
+          ctx.arc(c * cellPx + cellPx/2, r * cellPx + cellPx/2, cellPx/2 - 1, 0, Math.PI * 2);
           ctx.fill();
         }
       }
     }
 
-    // Download
     const link = document.createElement('a');
-    link.download = 'bead-art.png';
-    link.href = canvas.toDataURL();
+    link.download = `拼豆作品_${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
     link.click();
-  }
-
-  updateStats() {
-    const beadCount = this.countBeads();
-    const colorCounts = this.getColorCounts();
-
-    document.getElementById('bead-count').textContent = beadCount;
-
-    // Update color badges
-    Object.entries(colorCounts).forEach(([color, count]) => {
-      const swatch = document.querySelector(`.color-swatch[data-color="${color}"]`);
-      if (swatch) {
-        let badge = swatch.querySelector('.badge');
-        if (!badge) {
-          badge = document.createElement('span');
-          badge.className = 'badge';
-          badge.style.cssText = 'position:absolute;font-size:8px;color:white;text-shadow:0 0 1px black;top:0;right:0;';
-          swatch.style.position = 'relative';
-          swatch.appendChild(badge);
-        }
-        badge.textContent = count;
-        badge.style.display = count > 0 ? 'block' : 'none';
-      }
-    });
-  }
-
-  countBeads() {
-    let count = 0;
-    for (let r = 0; r < this.board.rows; r++) {
-      for (let c = 0; c < this.board.cols; c++) {
-        if (this.board.grid[r][c]) count++;
-      }
-    }
-    return count;
-  }
-
-  getColorCounts() {
-    const counts = {};
-    for (let r = 0; r < this.board.rows; r++) {
-      for (let c = 0; c < this.board.cols; c++) {
-        const color = this.board.grid[r][c];
-        if (color) {
-          counts[color] = (counts[color] || 0) + 1;
-        }
-      }
-    }
-    return counts;
   }
 }

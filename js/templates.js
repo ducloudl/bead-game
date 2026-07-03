@@ -1,62 +1,88 @@
-// Template management and image processing
+// Templates management
 export class Templates {
   constructor(board, tools) {
     this.board = board;
     this.tools = tools;
-    this.templates = this.loadDefaultTemplates();
+    this.templates = this.getDefaultTemplates();
+    this.loadTemplates();
   }
   
-  loadDefaultTemplates() {
+  getDefaultTemplates() {
     return {
-      'heart': [
-        [0,1,1,0,0,0,1,1,0],
-        [1,1,1,1,0,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1],
-        [0,1,1,1,1,1,1,1,0],
-        [0,0,1,1,1,1,1,0,0],
-        [0,0,0,1,1,1,0,0,0]
-      ],
-      'star': [
-        [0,0,1,0,0,0,1,0,0],
-        [0,0,0,1,0,1,0,0,0],
-        [1,1,1,1,1,1,1,1,1],
-        [0,1,1,1,1,1,1,1,0],
-        [0,0,1,1,1,1,1,0,0],
-        [0,0,0,1,1,1,0,0,0],
-        [0,0,1,0,0,0,1,0,0]
-      ]
+      'heart': {
+        name: '❤️ 爱心',
+        pattern: [
+          [0,1,1,0,0,1,1,0],
+          [1,1,1,1,1,1,1,1],
+          [1,1,1,1,1,1,1,1],
+          [1,1,1,1,1,1,1,1],
+          [0,1,1,1,1,1,1,0],
+          [0,0,1,1,1,1,0,0],
+          [0,0,0,1,1,0,0,0],
+          [0,0,0,0,0,0,0,0],
+        ]
+      },
+      'star': {
+        name: '⭐ 星星',
+        pattern: [
+          [0,0,1,0,0,1,0,0],
+          [0,0,0,1,1,0,0,0],
+          [1,1,1,1,1,1,1,1],
+          [0,1,1,1,1,1,1,0],
+          [1,1,1,1,1,1,1,1],
+          [0,0,0,1,1,0,0,0],
+          [0,0,1,0,0,1,0,0],
+          [0,0,0,0,0,0,0,0],
+        ]
+      },
+      'smiley': {
+        name: '😊 笑脸',
+        pattern: [
+          [0,0,1,1,1,1,0,0],
+          [0,1,1,1,1,1,1,0],
+          [1,1,0,1,1,0,1,1],
+          [1,1,1,1,1,1,1,1],
+          [1,1,0,1,1,0,1,1],
+          [1,1,1,1,1,1,1,1],
+          [0,1,0,1,1,0,1,0],
+          [0,0,0,0,0,0,0,0],
+        ]
+      }
     };
   }
   
   loadTemplates() {
-    // Populate template selection UI
-    const templateSelect = document.getElementById('template-select');
-    if (templateSelect) {
-      Object.keys(this.templates).forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name.charAt(0).toUpperCase() + name.slice(1);
-        templateSelect.appendChild(option);
-      });
+    const select = document.getElementById('template-select');
+    if (!select) return;
+    
+    for (const [key, template] of Object.entries(this.templates)) {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = template.name;
+      select.appendChild(option);
     }
   }
   
-  applyTemplate(templateName, color) {
+  applyTemplate(templateName, defaultColor = '#FF0000') {
     const template = this.templates[templateName];
     if (!template) return;
     
-    this.tools.state?.saveState?.(); // Save before applying template
+    const pattern = template.pattern;
+    const rows = pattern.length;
+    const cols = pattern[0].length;
     
-    const rows = template.length;
-    const cols = template[0].length;
+    // Center the template on the board
     const startRow = Math.floor((this.board.rows - rows) / 2);
     const startCol = Math.floor((this.board.cols - cols) / 2);
     
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        if (template[r][c]) {
-          this.board.setCell(startRow + r, startCol + c, color);
+        if (pattern[r][c]) {
+          const br = startRow + r;
+          const bc = startCol + c;
+          if (br >= 0 && br < this.board.rows && bc >= 0 && bc < this.board.cols) {
+            this.board.setCell(br, bc, defaultColor);
+          }
         }
       }
     }
@@ -70,88 +96,75 @@ export class Templates {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Resize image to fit board
-        const maxSize = Math.min(this.board.rows, this.board.cols);
-        canvas.width = maxSize;
-        canvas.height = maxSize;
-        ctx.drawImage(img, 0, 0, maxSize, maxSize);
+        // Scale image to fit board
+        const scale = Math.min(this.board.cols / img.width, this.board.rows / img.height);
+        canvas.width = Math.floor(img.width * scale);
+        canvas.height = Math.floor(img.height * scale);
         
-        const imageData = ctx.getImageData(0, 0, maxSize, maxSize);
-        const grid = this.quantizeImage(imageData);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
-        // Clear board and apply processed image
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+        
+        // Clear board first
         this.board.clear();
-        for (let r = 0; r < gridSize; r++) {
-          for (let c = 0; c < cols; c++) {
-            if (grid[r][c]) {
-              this.board.setCell(r, c, grid[r][c]);
+        
+        // Map pixels to board
+        const cellW = this.board.cols / canvas.width;
+        const cellH = this.board.rows / canvas.height;
+        
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            const idx = (y * canvas.width + x) * 4;
+            const r = pixels[idx];
+            const g = pixels[idx + 1];
+            const b = pixels[idx + 2];
+            
+            if (r + g + b < 5) continue; // Skip black/very dark
+            
+            const color = this.findClosestColor(r, g, b);
+            const boardX = Math.floor(x * cellW);
+            const boardY = Math.floor(y * cellH);
+            
+            if (boardY >= 0 && boardY < this.board.rows && boardX >= 0 && boardX < this.board.cols) {
+              this.board.setCell(boardY, boardX, color);
             }
           }
         }
         
-        callback(grid);
+        callback?.();
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }
   
-  quantizeImage(imageData) {
-    const { width, height, data } = imageData;
-    const grid = Array(height).fill(null).map(() => Array(width).fill(null));
-    
-    // Simple color quantization
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const i = (y * width + x) * 4;
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-        
-        if (a > 128) {
-          // Convert to nearest palette color
-          const color = this.findClosestColor(r, g, b);
-          grid[y][x] = color;
-        }
-      }
-    }
-    
-    return grid;
-  }
-  
   findClosestColor(r, g, b) {
-    // Simple RGB distance to predefined colors
-    const colors = [
-      '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-      '#FFFFFF', '#000000', '#FF6600', '#FF9900', '#CC0000', '#990000',
-      '#FF3300', '#FF6633', '#FF9966', '#FFCC99', '#FFCCCC', '#996633',
-      '#663300', '#996600', '#CC9900', '#FFCC00', '#FFFF99', '#CCCC99',
-      '#999999', '#666666', '#333333', '#CCCCCC', '#99CCFF', '#6699FF',
-      '#3366FF', '#0033CC', '#006699', '#0099CC', '#00CC99', '#009966',
-      '#006633'
+    const palettes = [
+      {r:255,g:0,b:0},{r:255,g:102,b:0},{r:255,g:153,b:0},{r:255,g:255,b:0},
+      {r:255,g:255,b:153},{r:255,g:204,b:153},{r:153,g:102,b:51},{r:102,g:51,b:0},
+      {r:204,g:153,b:0},{r:0,g:255,b:0},{r:0,g:153,b:102},{r:0,g:102,b:51},
+      {r:0,g:255,b:255},{r:0,g:153,b:204},{r:0,g:0,b:255},{r:0,g:51,b:204},
+      {r:102,g:153,b:255},{r:153,g:204,b:255},{r:255,g:0,b:255},{r:255,g:204,b:204},
+      {r:204,g:0,b:0},{r:153,g:0,b:0},{r:255,g:51,b:0},{r:255,g:102,b:51},
+      {r:255,g:153,b:102},{r:255,g:204,b:204},{r:153,g:153,b:153},{r:102,g:102,b:102},
+      {r:51,g:51,b:51},{r:255,g:255,b:255},{r:0,g:0,b:0}
     ];
     
-    let minDistance = Infinity;
-    let closestColor = colors[0];
+    let minDist = Infinity;
+    let closest = palettes[0];
     
-    for (const color of colors) {
-      const cr = parseInt(color.substr(1, 2), 16);
-      const cg = parseInt(color.substr(3, 2), 16);
-      const cb = parseInt(color.substr(5, 2), 16);
-      
-      const distance = Math.sqrt(
-        Math.pow(r - cr, 2) + 
-        Math.pow(g - cg, 2) + 
-        Math.pow(b - cb, 2)
-      );
-      
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestColor = color;
+    for (const p of palettes) {
+      const dr = r - p.r;
+      const dg = g - p.g;
+      const db = b - p.b;
+      const dist = dr*dr + dg*dg + db*db;
+      if (dist < minDist) {
+        minDist = dist;
+        closest = p;
       }
     }
     
-    return closestColor;
+    return `#${closest.r.toString(16).padStart(2,'0')}${closest.g.toString(16).padStart(2,'0')}${closest.b.toString(16).padStart(2,'0')}`.toUpperCase();
   }
 }

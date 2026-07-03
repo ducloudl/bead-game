@@ -5,104 +5,80 @@ export class StateManager {
     this.history = [];
     this.future = [];
     this.maxHistory = 50;
-    this.isRestoring = false;
+    this.isProcessing = false;
     
-    this.setupAutoSave();
+    this.autoSaveInterval = setInterval(() => {
+      this.saveToLocalStorage();
+    }, 30000);
+    
+    this.restoreState();
   }
   
   saveState() {
-    if (this.isRestoring) return;
+    if (this.isProcessing) return;
     
-    // Remove any future states when a new action is made
-    this.future = [];
+    const state = this.board.grid.map(row => [...row]);
+    this.history.push(state);
     
-    // Add current state to history
-    this.history.push(this.cloneGrid());
-    
-    // Limit history size
     if (this.history.length > this.maxHistory) {
       this.history.shift();
     }
+    
+    this.future = [];
+    this.saveToLocalStorage();
   }
   
   undo() {
     if (this.history.length <= 1) return;
     
-    // Save current state to future
-    this.future.push(this.history.pop());
+    this.isProcessing = true;
+    const currentState = this.history.pop();
+    this.future.push(currentState);
     
-    // Restore previous state
-    const previousState = this.history[this.history.length - 1];
-    this.restoreGrid(previousState);
+    const prevState = this.history[this.history.length - 1];
+    this.board.grid = prevState.map(row => [...row]);
+    this.board.render();
+    this.isProcessing = false;
+    
+    this.saveToLocalStorage();
   }
   
   redo() {
     if (this.future.length === 0) return;
     
-    // Get state from future
+    this.isProcessing = true;
     const nextState = this.future.pop();
-    
-    // Save to history
     this.history.push(nextState);
     
-    // Restore the state
-    this.restoreGrid(nextState);
-  }
-  
-  cloneGrid() {
-    return this.board.grid.map(row => [...row]);
-  }
-  
-  restoreGrid(grid) {
-    this.isRestoring = true;
-    this.board.grid = grid;
+    this.board.grid = nextState.map(row => [...row]);
     this.board.render();
-    this.isRestoring = false;
-  }
-  
-  setupAutoSave() {
-    // Auto-save to localStorage every 30 seconds
-    setInterval(() => {
-      this.saveToLocalStorage();
-    }, 30000);
+    this.isProcessing = true;
     
-    // Save before leaving page
-    window.addEventListener('beforeunload', () => {
-      this.saveToLocalStorage();
-    });
+    this.saveToLocalStorage();
   }
   
   saveToLocalStorage() {
-    const data = {
-      grid: this.board.grid,
-      timestamp: Date.now()
-    };
-    
     try {
-      localStorage.setItem('bead-game-state', JSON.stringify(data));
+      localStorage.setItem('bead-game-state', JSON.stringify(this.board.grid));
     } catch (e) {
-      console.error('Failed to save state:', e);
+      console.warn('Save failed:', e);
     }
   }
   
   restoreState() {
     try {
-      const data = localStorage.getItem('bead-game-state');
-      if (data) {
-        const parsed = JSON.parse(data);
-        this.board.grid = parsed.grid;
-        this.board.render();
-        
-        // Initialize history with restored state
-        this.history = [this.cloneGrid()];
+      const saved = localStorage.getItem('bead-game-state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length === this.board.rows && 
+            parsed[0] && parsed[0].length === this.board.cols) {
+          this.board.grid = parsed;
+          this.board.render();
+          this.history.push(parsed.map(row => [...row]));
+        }
       }
     } catch (e) {
-      console.error('Failed to restore state:', e);
+      console.warn('Restore failed:', e);
     }
-  }
-  
-  clearHistory() {
-    this.history = [];
-    this.future = [];
   }
 }

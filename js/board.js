@@ -6,16 +6,26 @@ export class Board {
     this.grid = this.createEmptyGrid();
     this.cellSize = 22;
     this.element = document.getElementById('board');
+    this.wrapper = this.element?.parentElement;
+    
+    if (this.element) {
+      this.updateGridStyle();
+    }
   }
   
   createEmptyGrid() {
-    return Array(this.rows).fill(null).map(() => Array(this.cols).fill(null));
+    return Array.from({ length: this.rows }, () => Array(this.cols).fill(null));
+  }
+  
+  updateGridStyle() {
+    if (!this.element) return;
+    this.element.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
+    this.element.style.gridTemplateRows = `repeat(${this.rows}, 1fr)`;
   }
   
   render() {
+    if (!this.element) return;
     this.element.innerHTML = '';
-    this.element.style.gridTemplateColumns = `repeat(${this.cols}, ${this.cellSize}px)`;
-    this.element.style.gridTemplateRows = `repeat(${this.rows}, ${this.cellSize}px)`;
     
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
@@ -23,11 +33,10 @@ export class Board {
         cell.className = 'cell';
         cell.dataset.row = r;
         cell.dataset.col = c;
-        cell.style.width = `${this.cellSize}px`;
-        cell.style.height = `${this.cellSize}px`;
         
-        if (this.grid[r][c]) {
-          cell.style.backgroundColor = this.grid[r][c];
+        const color = this.grid[r][c];
+        if (color) {
+          cell.style.backgroundColor = color;
           cell.classList.add('has-bead');
         }
         
@@ -36,28 +45,17 @@ export class Board {
     }
   }
   
-  updateCell(row, col, color) {
-    const cell = this.element.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+  setCell(row, col, color) {
+    this.grid[row][col] = color;
+    const cell = this.element?.querySelector(`[data-row="${row}"][data-col="${col}"]`);
     if (cell) {
-      if (color) {
-        cell.style.backgroundColor = color;
-        cell.classList.add('has-bead');
-        this.grid[row][col] = color;
-      } else {
-        cell.style.backgroundColor = '';
-        cell.classList.remove('has-bead');
-        this.grid[row][col] = null;
-      }
+      cell.style.backgroundColor = color || '';
+      cell.classList.toggle('has-bead', !!color);
     }
   }
   
   getCell(row, col) {
-    return this.grid[row][col];
-  }
-  
-  setCell(row, col, color) {
-    this.grid[row][col] = color;
-    this.updateCell(row, col, color);
+    return this.grid[row]?.[col] || null;
   }
   
   clear() {
@@ -65,9 +63,13 @@ export class Board {
     this.render();
   }
   
-  resize(newRows, newCols) {
-    this.rows = newRows;
-    this.cols = newCols;
-    this.clear();
+  countBeads() {
+    let count = 0;
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        if (this.grid[r][c]) count++;
+      }
+    }
+    return count;
   }
 }
