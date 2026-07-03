@@ -3,8 +3,20 @@ export class Templates {
   constructor(board, tools) {
     this.board = board;
     this.tools = tools;
-    this.templates = this.getDefaultTemplates();
-    this.loadTemplates();
+    this.templateDefs = this.getDefaultTemplates();
+    // Don't call loadTemplates here — DOM might not be ready
+  }
+  
+  loadTemplates() {
+    const select = document.getElementById('template-select');
+    if (!select) return;
+    
+    for (const [key, def] of Object.entries(this.templateDefs)) {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = def.name;
+      select.appendChild(option);
+    }
   }
   
   getDefaultTemplates() {
@@ -51,27 +63,14 @@ export class Templates {
     };
   }
   
-  loadTemplates() {
-    const select = document.getElementById('template-select');
-    if (!select) return;
-    
-    for (const [key, template] of Object.entries(this.templates)) {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = template.name;
-      select.appendChild(option);
-    }
-  }
-  
   applyTemplate(templateName, defaultColor = '#FF0000') {
-    const template = this.templates[templateName];
-    if (!template) return;
+    const def = this.templateDefs[templateName];
+    if (!def) return;
     
-    const pattern = template.pattern;
+    const pattern = def.pattern;
     const rows = pattern.length;
     const cols = pattern[0].length;
     
-    // Center the template on the board
     const startRow = Math.floor((this.board.rows - rows) / 2);
     const startCol = Math.floor((this.board.cols - cols) / 2);
     
@@ -96,7 +95,6 @@ export class Templates {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Scale image to fit board
         const scale = Math.min(this.board.cols / img.width, this.board.rows / img.height);
         canvas.width = Math.floor(img.width * scale);
         canvas.height = Math.floor(img.height * scale);
@@ -106,10 +104,8 @@ export class Templates {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const pixels = imageData.data;
         
-        // Clear board first
         this.board.clear();
         
-        // Map pixels to board
         const cellW = this.board.cols / canvas.width;
         const cellH = this.board.rows / canvas.height;
         
@@ -120,7 +116,7 @@ export class Templates {
             const g = pixels[idx + 1];
             const b = pixels[idx + 2];
             
-            if (r + g + b < 5) continue; // Skip black/very dark
+            if (r + g + b < 5) continue;
             
             const color = this.findClosestColor(r, g, b);
             const boardX = Math.floor(x * cellW);
