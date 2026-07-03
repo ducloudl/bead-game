@@ -59,9 +59,8 @@
 
   <script>
   // ===== Board =====
-  var Board = /** @class */ (function () {
+  var Board = (function() {
     function Board(rows, cols) {
-      var _this = this;
       this.rows = rows || 24;
       this.cols = cols || 30;
       this.grid = [];
@@ -76,27 +75,27 @@
         this.element.style.gridTemplateColumns = 'repeat(' + this.cols + ', 1fr)';
         this.element.style.gridTemplateRows = 'repeat(' + this.rows + ', 1fr)';
       }
-      this._render = function () {
-        if (!_this.element) return;
-        _this.element.innerHTML = '';
-        for (var r = 0; r < _this.rows; r++) {
-          for (var c = 0; c < _this.cols; c++) {
-            var cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.dataset.row = r;
-            cell.dataset.col = c;
-            var color = _this.grid[r][c];
-            if (color) {
-              cell.style.backgroundColor = color;
-              cell.classList.add('has-bead');
-            }
-            _this.element.appendChild(cell);
-          }
-        }
-      };
       this._render();
     }
-    Board.prototype.setCell = function (row, col, color) {
+    Board.prototype._render = function() {
+      if (!this.element) return;
+      this.element.innerHTML = '';
+      for (var r = 0; r < this.rows; r++) {
+        for (var c = 0; c < this.cols; c++) {
+          var cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          var color = this.grid[r][c];
+          if (color) {
+            cell.style.backgroundColor = color;
+            cell.classList.add('has-bead');
+          }
+          this.element.appendChild(cell);
+        }
+      }
+    };
+    Board.prototype.setCell = function(row, col, color) {
       this.grid[row][col] = color;
       if (this.element) {
         var cell = this.element.querySelector('[data-row="' + row + '"][data-col="' + col + '"]');
@@ -106,11 +105,10 @@
         }
       }
     };
-    Board.prototype.getCell = function (row, col) {
+    Board.prototype.getCell = function(row, col) {
       return this.grid[row] ? this.grid[row][col] : null;
     };
-    Board.prototype.clear = function () {
-      var _this = this;
+    Board.prototype.clear = function() {
       this.grid = [];
       for (var r = 0; r < this.rows; r++) {
         this.grid[r] = [];
@@ -120,7 +118,7 @@
       }
       this._render();
     };
-    Board.prototype.countBeads = function () {
+    Board.prototype.countBeads = function() {
       var count = 0;
       for (var r = 0; r < this.rows; r++) {
         for (var c = 0; c < this.cols; c++) {
@@ -129,14 +127,13 @@
       }
       return count;
     };
-    Board.prototype.render = function () { this._render(); };
+    Board.prototype.render = function() { this._render(); };
     return Board;
-  }());
+  })();
 
   // ===== StateManager =====
-  var StateManager = /** @class */ (function () {
+  var StateManager = (function() {
     function StateManager(board) {
-      var _this = this;
       this.board = board;
       this.history = [];
       this.future = [];
@@ -150,47 +147,45 @@
           if (parsed && parsed.length === this.board.rows && parsed[0] && parsed[0].length === this.board.cols) {
             this.board.grid = parsed;
             this.board.render();
-            this.history.push(parsed.map(function (row) { return row.slice(); }));
+            this.history.push(parsed.map(function(row) { return row.slice(); }));
           }
         }
       } catch (e) { console.warn('Restore failed:', e); }
     }
-    StateManager.prototype.saveState = function () {
+    StateManager.prototype.saveState = function() {
       if (this.isProcessing) return;
-      var state = this.board.grid.map(function (row) { return row.slice(); });
+      var state = this.board.grid.map(function(row) { return row.slice(); });
       this.history.push(state);
       if (this.history.length > this.maxHistory) this.history.shift();
       this.future = [];
       try { localStorage.setItem('bead-game-state', JSON.stringify(this.board.grid)); } catch (e) {}
     };
-    StateManager.prototype.undo = function () {
-      var _this = this;
+    StateManager.prototype.undo = function() {
       if (this.history.length <= 1) return;
       this.isProcessing = true;
       var currentState = this.history.pop();
       this.future.push(currentState);
       var prevState = this.history[this.history.length - 1];
-      this.board.grid = prevState.map(function (row) { return row.slice(); });
+      this.board.grid = prevState.map(function(row) { return row.slice(); });
       this.board.render();
       this.isProcessing = false;
       try { localStorage.setItem('bead-game-state', JSON.stringify(this.board.grid)); } catch (e) {}
     };
-    StateManager.prototype.redo = function () {
-      var _this = this;
+    StateManager.prototype.redo = function() {
       if (this.future.length === 0) return;
       this.isProcessing = true;
       var nextState = this.future.pop();
       this.history.push(nextState);
-      this.board.grid = nextState.map(function (row) { return row.slice(); });
+      this.board.grid = nextState.map(function(row) { return row.slice(); });
       this.board.render();
       this.isProcessing = false;
       try { localStorage.setItem('bead-game-state', JSON.stringify(this.board.grid)); } catch (e) {}
     };
     return StateManager;
-  }());
+  })();
 
   // ===== Templates =====
-  var Templates = /** @class */ (function () {
+  var Templates = (function() {
     function Templates(board, tools) {
       this.board = board;
       this.tools = tools;
@@ -209,11 +204,11 @@
         ]}
       };
     }
-    Templates.prototype.loadTemplates = function () {
+    Templates.prototype.loadTemplates = function() {
       var select = document.getElementById('template-select');
       if (!select) return;
       var _this = this;
-      Object.keys(this.templateDefs).forEach(function (key) {
+      Object.keys(this.templateDefs).forEach(function(key) {
         var def = _this.templateDefs[key];
         var option = document.createElement('option');
         option.value = key;
@@ -221,7 +216,7 @@
         select.appendChild(option);
       });
     };
-    Templates.prototype.applyTemplate = function (templateName, defaultColor) {
+    Templates.prototype.applyTemplate = function(templateName, defaultColor) {
       if (!defaultColor) defaultColor = '#FF0000';
       var def = this.templateDefs[templateName];
       if (!def) return;
@@ -242,12 +237,12 @@
         }
       }
     };
-    Templates.prototype.processImage = function (file, callback) {
+    Templates.prototype.processImage = function(file, callback) {
       var _this = this;
       var reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = function(e) {
         var img = new Image();
-        img.onload = function () {
+        img.onload = function() {
           var canvas = document.createElement('canvas');
           var ctx = canvas.getContext('2d');
           var scale = Math.min(_this.board.cols / img.width, _this.board.rows / img.height);
@@ -278,7 +273,7 @@
       };
       reader.readAsDataURL(file);
     };
-    Templates.prototype.findClosestColor = function (r, g, b) {
+    Templates.prototype.findClosestColor = function(r, g, b) {
       var palettes = [
         {r:255,g:0,b:0},{r:255,g:102,b:0},{r:255,g:153,b:0},{r:255,g:255,b:0},
         {r:255,g:255,b:153},{r:255,g:204,b:153},{r:153,g:102,b:51},{r:102,g:51,b:0},
@@ -299,10 +294,10 @@
       return '#' + closest.r.toString(16).padStart(2,'0') + closest.g.toString(16).padStart(2,'0') + closest.b.toString(16).padStart(2,'0');
     };
     return Templates;
-  }());
+  })();
 
   // ===== UIManager =====
-  var UIManager = /** @class */ (function () {
+  var UIManager = (function() {
     function UIManager(board, tools, state, templates) {
       this.board = board;
       this.tools = tools;
@@ -322,19 +317,19 @@
         {name:'白色',hex:'#FFFFFF'},{name:'黑色',hex:'#000000'}
       ];
     }
-    UIManager.prototype.initialize = function () {
+    UIManager.prototype.initialize = function() {
       this.generateColorPalette();
       this.setupEventListeners();
       this.updateStats();
       var firstSwatch = document.querySelector('.color-swatch');
       if (firstSwatch) this.tools.selectColor(firstSwatch.dataset.color);
     };
-    UIManager.prototype.generateColorPalette = function () {
+    UIManager.prototype.generateColorPalette = function() {
       var container = document.getElementById('color-palette');
       if (!container) return;
       container.innerHTML = '';
       var _this = this;
-      this.colors.forEach(function (color) {
+      this.colors.forEach(function(color) {
         var swatch = document.createElement('div');
         swatch.className = 'color-swatch';
         swatch.dataset.color = color.hex;
@@ -343,27 +338,27 @@
         if (color.hex === '#000000' || color.hex === '#333333' || color.hex === '#666666' || color.hex === '#999999') {
           swatch.style.border = '2px solid #ccc';
         }
-        swatch.addEventListener('click', function () { _this.tools.selectColor(color.hex); });
+        swatch.addEventListener('click', function() { _this.tools.selectColor(color.hex); });
         container.appendChild(swatch);
       });
     };
-    UIManager.prototype.setupEventListeners = function () {
+    UIManager.prototype.setupEventListeners = function() {
       var _this = this;
       var undoBtn = document.getElementById('undo-btn');
       var redoBtn = document.getElementById('redo-btn');
       var clearBtn = document.getElementById('clear-btn');
       var exportBtn = document.getElementById('export-btn');
-      if (undoBtn) undoBtn.addEventListener('click', function () { _this.state.undo(); });
-      if (redoBtn) redoBtn.addEventListener('click', function () { _this.state.redo(); });
-      if (clearBtn) clearBtn.addEventListener('click', function () {
+      if (undoBtn) undoBtn.addEventListener('click', function() { _this.state.undo(); });
+      if (redoBtn) redoBtn.addEventListener('click', function() { _this.state.redo(); });
+      if (clearBtn) clearBtn.addEventListener('click', function() {
         if (confirm('确定要清空画布吗？')) { _this.state.saveState(); _this.board.clear(); _this.updateStats(); }
       });
-      if (exportBtn) exportBtn.addEventListener('click', function () { _this.exportToPNG(); });
+      if (exportBtn) exportBtn.addEventListener('click', function() { _this.exportToPNG(); });
       // Advanced toggle
       var advToggle = document.getElementById('adv-toggle');
       var advPanel = document.getElementById('adv-panel');
       if (advToggle && advPanel) {
-        advToggle.addEventListener('click', function () {
+        advToggle.addEventListener('click', function() {
           advPanel.classList.toggle('open');
           advToggle.textContent = advPanel.classList.contains('open') ? '⚙️ 收起功能 ▴' : '⚙️ 更多功能 ▾';
         });
@@ -371,7 +366,7 @@
       // Template apply
       var applyBtn = document.getElementById('apply-template-btn');
       if (applyBtn) {
-        applyBtn.addEventListener('click', function () {
+        applyBtn.addEventListener('click', function() {
           var sel = document.getElementById('template-select');
           if (sel.value) { _this.templates.applyTemplate(sel.value, _this.tools.selectedColor); _this.updateStats(); }
         });
@@ -379,22 +374,22 @@
       // Image upload
       var uploadInput = document.getElementById('image-upload');
       if (uploadInput) {
-        uploadInput.addEventListener('change', function (e) {
+        uploadInput.addEventListener('change', function(e) {
           var file = e.target.files[0];
-          if (file) { _this.templates.processImage(file, function () { _this.updateStats(); }); uploadInput.value = ''; }
+          if (file) { _this.templates.processImage(file, function() { _this.updateStats(); }); uploadInput.value = ''; }
         });
       }
       // Keyboard
-      document.addEventListener('keydown', function (e) {
+      document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'z') { e.preventDefault(); _this.state.undo(); }
         if (e.ctrlKey && e.key === 'y') { e.preventDefault(); _this.state.redo(); }
       });
     };
-    UIManager.prototype.updateStats = function () {
+    UIManager.prototype.updateStats = function() {
       var el = document.getElementById('bead-count');
       if (el) el.textContent = String(this.board.countBeads());
     };
-    UIManager.prototype.exportToPNG = function () {
+    UIManager.prototype.exportToPNG = function() {
       var canvas = document.createElement('canvas');
       var ctx = canvas.getContext('2d');
       var cellPx = 15;
@@ -419,10 +414,10 @@
       link.click();
     };
     return UIManager;
-  }());
+  })();
 
   // ===== Tools =====
-  var Tools = /** @class */ (function () {
+  var Tools = (function() {
     function Tools(board, uiManager) {
       this.board = board;
       this.uiManager = uiManager;
@@ -433,47 +428,47 @@
       var _this = this;
       if (this.board.element) {
         // Touch
-        this.board.element.addEventListener('touchstart', function (e) {
+        this.board.element.addEventListener('touchstart', function(e) {
           if (e.target.classList.contains('cell')) {
             e.preventDefault();
             _this.isDrawing = true;
             _this.handleCellInteraction(e.touches[0]);
           }
         }, { passive: false });
-        this.board.element.addEventListener('touchmove', function (e) {
+        this.board.element.addEventListener('touchmove', function(e) {
           if (_this.isDrawing && e.target.classList.contains('cell')) {
             e.preventDefault();
             _this.handleCellInteraction(e.touches[0]);
           }
         }, { passive: false });
-        this.board.element.addEventListener('touchend', function () {
+        this.board.element.addEventListener('touchend', function() {
           _this.isDrawing = false;
           _this.lastCell = null;
         });
         // Mouse
-        this.board.element.addEventListener('mousedown', function (e) {
+        this.board.element.addEventListener('mousedown', function(e) {
           if (e.target.classList.contains('cell')) {
             _this.isDrawing = true;
             _this.handleCellInteraction(e);
           }
         });
-        document.addEventListener('mouseup', function () {
+        document.addEventListener('mouseup', function() {
           _this.isDrawing = false;
           _this.lastCell = null;
         });
-        this.board.element.addEventListener('mousemove', function (e) {
+        this.board.element.addEventListener('mousemove', function(e) {
           if (_this.isDrawing && e.target.classList.contains('cell')) {
             _this.handleCellInteraction(e);
           }
         });
         // Tool buttons
-        document.querySelectorAll('.tool-item[data-tool]').forEach(function (btn) {
-          btn.addEventListener('click', function () { _this.selectTool(btn.dataset.tool); });
+        document.querySelectorAll('.tool-item[data-tool]').forEach(function(btn) {
+          btn.addEventListener('click', function() { _this.selectTool(btn.dataset.tool); });
         });
       }
       this.updateColorPreview();
     }
-    Tools.prototype.handleCellInteraction = function (e) {
+    Tools.prototype.handleCellInteraction = function(e) {
       var rect = this.board.element.getBoundingClientRect();
       var x = e.clientX - rect.left;
       var y = e.clientY - rect.top;
@@ -491,20 +486,20 @@
         case 'fill': this.floodFill(row, col); break;
       }
     };
-    Tools.prototype.placeBead = function (row, col) {
+    Tools.prototype.placeBead = function(row, col) {
       if (this.board.getCell(row, col) !== this.selectedColor) {
         this.board.setCell(row, col, this.selectedColor);
         this.uiManager && this.uiManager.updateStats && this.uiManager.updateStats();
         this.uiManager && this.uiManager.state && this.uiManager.state.saveState();
       }
     };
-    Tools.prototype.removeBead = function (row, col) {
+    Tools.prototype.removeBead = function(row, col) {
       if (this.board.getCell(row, col)) {
         this.board.setCell(row, col, null);
         this.uiManager && this.uiManager.state && this.uiManager.state.saveState();
       }
     };
-    Tools.prototype.pickColor = function (row, col) {
+    Tools.prototype.pickColor = function(row, col) {
       var color = this.board.getCell(row, col);
       if (color) {
         this.selectedColor = color;
@@ -512,7 +507,7 @@
         this.selectTool('pen');
       }
     };
-    Tools.prototype.floodFill = function (startRow, startCol) {
+    Tools.prototype.floodFill = function(startRow, startCol) {
       var _this = this;
       var targetColor = this.board.getCell(startRow, startCol);
       if (!targetColor) return;
@@ -535,30 +530,30 @@
       }
       this.uiManager && this.uiManager.state && this.uiManager.state.saveState();
     };
-    Tools.prototype.selectTool = function (tool) {
+    Tools.prototype.selectTool = function(tool) {
       this.currentTool = tool;
-      document.querySelectorAll('.tool-item').forEach(function (btn) {
+      document.querySelectorAll('.tool-item').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.tool === tool);
       });
     };
-    Tools.prototype.selectColor = function (color) {
+    Tools.prototype.selectColor = function(color) {
       var _this = this;
       this.selectedColor = color;
       this.updateColorPreview();
-      document.querySelectorAll('.color-swatch').forEach(function (swatch) {
+      document.querySelectorAll('.color-swatch').forEach(function(swatch) {
         swatch.classList.toggle('selected', swatch.dataset.color === color);
       });
       this.selectTool('pen');
     };
-    Tools.prototype.updateColorPreview = function () {
+    Tools.prototype.updateColorPreview = function() {
       var preview = document.getElementById('current-color-preview');
       if (preview) preview.style.background = this.selectedColor;
     };
     return Tools;
-  }());
+  })();
 
   // ===== Init =====
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', function() {
     var board = new Board(24, 30);
     var state = new StateManager(board);
     var templates = new Templates(board, null);
